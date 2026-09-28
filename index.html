@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>English sentence study</title>
+<style>
+/* ============================================================
+   Design tokens. Light and dark themes follow the device setting.
+   ============================================================ */
+:root{
+  --bg:#F3F5F7; --surface:#FFFFFF; --ink:#18212B; --muted:#56616D; --line:#D5DBE1;
+  --accent:#2B5F75; --accent-ink:#FFFFFF; --accent-soft:#E3EEF2;
+  --warn:#7A4F0E; --warn-soft:#FBF1DE; --bad:#9B3B2E; --ok:#2E6B4F;
+  --s1:#A0473A; --s2:#B86E4E; --s3:#C29A6A; --s4:#7FA39A; --s5:#4E8878; --s6:#2B6A5A;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --radius:10px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#11161B; --surface:#1A2129; --ink:#E5E9ED; --muted:#9AA6B2; --line:#2D3742;
+    --accent:#86B7CB; --accent-ink:#0E1419; --accent-soft:#1F2E36;
+    --warn:#E3B66A; --warn-soft:#2E2618; --bad:#E08A7C; --ok:#8CC7A8;
+    --s1:#D98474; --s2:#D9A07E; --s3:#D6BE92; --s4:#9CC3B8; --s5:#7DB8A6; --s6:#5FA892;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.55;-webkit-text-size-adjust:100%}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* Header */
+.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.top-inner{max-width:880px;margin:0 auto;padding:12px 20px;display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+.brand{font-weight:600;font-size:15px}
+.brand .part{color:var(--muted);font-weight:400}
+.progress-text{font-size:15px;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:3px;background:var(--line)}
+.bar > span{display:block;height:100%;background:var(--accent);transition:width .25s ease}
+
+/* Layout */
+main{max-width:880px;margin:0 auto;padding:32px 20px 80px}
+.narrow{max-width:720px}
+h1{font-size:28px;line-height:1.25;margin:0 0 16px;font-weight:650}
+h2{font-size:19px;margin:28px 0 8px;font-weight:650}
+p{margin:0 0 14px}
+.lede{font-size:18px;color:var(--muted)}
+.muted{color:var(--muted)}
+.small{font-size:15px}
+ul.guide{padding-left:22px;margin:0 0 14px}
+ul.guide li{margin-bottom:6px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+.card + .card{margin-top:16px}
+.note{background:var(--accent-soft);border-radius:var(--radius);padding:14px 16px;margin:16px 0}
+.warnbox{background:var(--warn-soft);color:var(--warn);border-radius:var(--radius);padding:14px 16px;margin:16px 0}
+.error{color:var(--bad);font-size:15px;margin-top:8px;min-height:1.4em}
+
+/* Buttons */
+.actions{display:flex;gap:12px;justify-content:space-between;align-items:center;margin-top:28px;flex-wrap:wrap}
+.actions.end{justify-content:flex-end}
+.btn{font:inherit;font-size:16px;font-weight:600;border-radius:8px;padding:12px 22px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);cursor:pointer;min-height:46px}
+.btn:hover{filter:brightness(1.07)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.quiet{background:transparent;color:var(--muted);border-color:var(--line)}
+.btn[disabled]{opacity:.4;cursor:not-allowed;filter:none}
+
+/* Stimuli */
+.stim{font-family:var(--serif);font-size:clamp(20px,3.6vw,30px);line-height:1.45;-webkit-user-select:none;user-select:none}
+.sources{font-family:var(--serif);font-size:clamp(19px,3vw,25px);line-height:1.5;-webkit-user-select:none;user-select:none}
+.sources p{margin:0 0 6px}
+.label{font-size:14px;color:var(--muted);margin:0 0 8px}
+
+/* SCT answer box with locked prefix */
+.answer{position:relative;margin-top:8px}
+.answer .prefix{position:absolute;top:15px;left:17px;font-family:var(--serif);font-size:clamp(19px,3vw,24px);line-height:1.5;font-weight:700;pointer-events:none;white-space:nowrap}
+.answer textarea{display:block;width:100%;min-height:128px;resize:vertical;font-family:var(--serif);font-size:clamp(19px,3vw,24px);line-height:1.5;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink)}
+.answer textarea:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.answer.static{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);padding:14px 16px;font-family:var(--serif);font-size:clamp(18px,2.8vw,22px)}
+
+/* GJT scale */
+.stim-wrap{min-height:140px;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px 8px 32px}
+.scale{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:8px}
+.scale button{font:inherit;text-align:left;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--c);border-radius:8px;padding:10px 10px 12px;cursor:pointer;min-height:96px;display:flex;flex-direction:column;gap:2px}
+.scale button .n{font-size:24px;font-weight:700;line-height:1.1}
+.scale button .m{font-size:14px;font-weight:600;line-height:1.25}
+.scale button .s{font-size:12.5px;color:var(--muted);line-height:1.25}
+.scale button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);border-left-color:var(--c);box-shadow:0 0 0 2px var(--accent) inset}
+.scale-ends{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px}
+@media (max-width:700px){
+  .scale{grid-template-columns:1fr}
+  .scale button{min-height:0;flex-direction:row;align-items:baseline;gap:12px;padding:12px 14px}
+  .scale button .n{font-size:20px;min-width:18px}
+  .scale-ends{display:none}
+}
+.keyhint{font-size:13.5px;color:var(--muted);margin-top:10px}
+
+/* Examples and reviews */
+.ex{border-top:1px solid var(--line);padding:16px 0}
+.ex:first-of-type{border-top:0}
+.ex .stim{font-size:clamp(18px,2.8vw,23px)}
+.chip{display:inline-block;font-size:14px;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid var(--line);margin:6px 0 4px}
+.chip.hi{border-color:var(--s6);color:var(--s6)}
+.chip.lo{border-color:var(--s1);color:var(--s1)}
+.rev{list-style:none;margin:0;padding:0}
+.rev li{border-top:1px solid var(--line);padding:14px 0;display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start}
+.rev li:first-child{border-top:0}
+.rev .num{color:var(--muted);font-variant-numeric:tabular-nums;padding-top:2px}
+.rev .txt{font-family:var(--serif);font-size:18px}
+.rev .txt .pre{font-weight:700}
+.rev li.missing .txt{color:var(--bad);font-family:var(--sans);font-size:15px}
+.mini{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.mini button{font:inherit;font-size:14px;font-weight:600;width:34px;height:34px;border-radius:6px;border:1px solid var(--line);border-bottom:3px solid var(--c);background:var(--surface);color:var(--ink);cursor:pointer}
+.mini button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+@media (max-width:640px){.rev li{grid-template-columns:28px 1fr}.rev li .mini,.rev li .edit{grid-column:2}.mini{justify-content:flex-start}}
+
+/* Forms */
+.form{display:grid;grid-template-columns:1fr 1fr;gap:18px 24px}
+.form .full{grid-column:1/-1}
+.field label{display:block;font-weight:600;font-size:15px;margin-bottom:6px}
+.field .help{font-size:13.5px;color:var(--muted);margin-top:4px}
+.field input,.field select{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);min-height:44px}
+.field input:focus,.field select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.field.invalid input,.field.invalid select{border-color:var(--bad)}
+.hidden{display:none!important}
+@media (max-width:640px){.form{grid-template-columns:1fr}}
+
+/* Dialog */
+dialog{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);color:var(--ink);max-width:460px;width:calc(100% - 40px);padding:24px}
+dialog::backdrop{background:rgba(10,15,20,.45)}
+dialog h2{margin-top:0}
+
+/* Admin */
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+table.t th,table.t td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+table.t th{font-weight:600;color:var(--muted)}
+.scroll{overflow-x:auto}
+.pass{color:var(--ok);font-weight:600}
+.fail{color:var(--bad);font-weight:600}
+details{margin-top:16px}
+summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<div id="app"><main><p class="muted">Loading…</p></main></div>
+<dialog id="dlg"><h2 id="dlg-title"></h2><p id="dlg-body"></p><div class="actions end"><button class="btn quiet" id="dlg-cancel">Go back</button><button class="btn" id="dlg-ok">Submit</button></div></dialog>
+<noscript><main><p>This study needs JavaScript. Please enable it in your browser and reload the page.</p></main></noscript>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   CONFIG: edit these values before running the study.
+   ============================================================ */
+const CONFIG = {
+  studyId: "RC-NPAH",
+  instrumentVersion: "v2",
+  // Google Apps Script web-app URL (ends in /exec). Leave empty to test without saving online.
+  dataEndpoint: "",
+  // Must match TOKEN in Code.gs.
+  studyToken: "CHANGE-ME-TOKEN",
+  // Valid values for ?group= in the study link.
+  groups: ["EFL", "native"],
+  requireGroupParam: true,
+  defaultGroup: "EFL",            // used only if requireGroupParam is false
+  // Optional recruitment-platform ID in the link (e.g. ?prolific_id=...). Stored only as a salted hash.
+  platformIdParam: "prolific_id",
+  hashSalt: "CHANGE-ME-SALT",
+  // Optional: redirect after a confirmed save (e.g. a Prolific completion URL). Empty = no redirect.
+  completionUrl: "",
+  completionCode: "",
+  // "block-phones" | "warn" | "allow"
+  devicePolicy: "block-phones",
+  includeDraftItems: true,        // GJT IDs 49-52, SCT IDs 25-26
+  includeCatchItems: true,        // 2 attention items inserted after GJT pres 17 and pres 35
+  includeFrameControl: false,     // optional verb-frame block after the GJT (placeholder items)
+  requireAllAnswers: true,
+  alwaysOfferDownload: false,     // true = show CSV/JSON download on the final screen even after a successful save
+  // Data-quality flags (never shown to participants)
+  minGjtMs: 1200,
+  straightLineRun: 10,
+  minTotalMinutes: 10,
+  minSctWords: 3,
+  minAge: 18,
+  durationText: "about 35 to 45 minutes",
+  // Researcher mode: open index.html?admin=1. This is a convenience lock, not real security.
+  adminPassword: "CHANGE-ME-ADMIN",
+  researcher: {
+    name: "[Researcher name]",
+    institution: "Mohammed V University in Rabat",
+    email: "i.zeddari@um5r.ac.ma"
+  }
+};
+
+/* ============================================================
+   ITEM BANKS (documented pseudorandom order; never reordered)
+   ============================================================ */
+// [pres, id, source1, source2, prompt, NPAH, animacy, verbClass, target, gjtGramMatch, gjtUngramMatch, draft]
+const SCT_RAW = [
+[1,21,"The volunteers distributed food to the orphanage.","The orphanage houses many children.","The orphanage","IO","I","PD-only","The orphanage to which the volunteers distributed food houses many children.",9,45,0],
+[2,12,"This shelf is wider than the cabinet.","The cabinet is in my office.","The cabinet","OCOMP","I","","The cabinet which this shelf is wider than is in my office.",24,30,0],
+[3,20,"She bought the camera.","The camera uses very little power.","The camera","DO","I","","The camera which she bought uses very little power.",8,44,0],
+[4,26,"The visitor asked the assistant the time.","The assistant speaks three languages.","The assistant","IO","A","DOC-only","The assistant whom the visitor asked the time speaks three languages.",51,52,1],
+[5,1,"The teacher helped the student.","The teacher works at the local school.","The teacher","SU","A","","The teacher who works at the local school helped the student.",13,1,0],
+[6,22,"The teacher drew a picture with the tablet.","The tablet is new.","The tablet","OBL","I","","The tablet with which the teacher drew a picture is new.",46,34,0],
+[7,8,"We visited the palace.","The palace displays ancient art.","The palace","DO","I","","The palace which we visited displays ancient art.",20,43,0],
+[8,5,"The woman teaches physics.","The woman's son studies in France.","The woman","GEN","A","","The woman whose son studies in France teaches physics.",23,35,0],
+[9,19,"The phone is on the table.","The phone needs a new battery.","The phone","SU","I","","The phone which is on the table needs a new battery.",37,19,0],
+[10,24,"The stone wall is higher than the fence.","The fence needs paint.","The fence","OCOMP","I","","The fence which the stone wall is higher than needs paint.",48,12,0],
+[11,4,"The journalist travelled with the singer.","The singer won the prize.","The singer","OBL","A","","The singer with whom the journalist travelled won the prize.",4,10,0],
+[12,15,"The guide described the map to the visitors.","The visitors were from Spain.","The visitors","IO","A","PD-only","The visitors to whom the guide described the map were from Spain.",33,27,0],
+[13,17,"The boy is waving at us.","The boy's dog is chasing a ball.","The boy","GEN","A","","The boy whose dog is chasing a ball is waving at us.",29,41,0],
+[14,10,"I was sitting on the bench.","The bench suddenly broke.","The bench","OBL","I","","The bench on which I was sitting suddenly broke.",28,22,0],
+[15,7,"The train arrived late.","The train serves the city center.","The train","SU","I","","The train which serves the city center arrived late.",31,7,0],
+[16,16,"I went to the theatre with my cousin.","My cousin loved the play.","My cousin","OBL","A","","My cousin with whom I went to the theatre loved the play.",40,16,0],
+[17,6,"Ali is taller than the student.","The student won the race.","The student","OCOMP","A","","The student who Ali is taller than won the race.",6,42,0],
+[18,23,"The firm closed last year.","The firm's main office was in Rabat.","The firm","GEN","I","","The firm whose main office was in Rabat closed last year.",47,5,0],
+[19,14,"We met the singer.","The singer won the prize.","The singer","DO","A","","The singer whom we met won the prize.",2,26,0],
+[20,25,"The storm cost the hotel a lot of money.","The hotel has a small garden.","The hotel","IO","I","DOC-only","The hotel which the storm cost a lot of money has a small garden.",49,50,1],
+[21,13,"The chef prepared the meal.","The chef is wearing a white hat.","The chef","SU","A","","The chef who is wearing a white hat prepared the meal.",25,32,0],
+[22,18,"Layla is faster than the swimmer.","The swimmer trains every morning.","The swimmer","OCOMP","A","","The swimmer who Layla is faster than trains every morning.",36,18,0],
+[23,9,"The foundation donated books to the library.","The library is in our neighborhood.","The library","IO","I","PD-only","The library to which the foundation donated books is in our neighborhood.",15,3,0],
+[24,11,"The building belongs to my aunt.","The building's windows face the sea.","The building","GEN","I","","The building whose windows face the sea belongs to my aunt.",11,17,0],
+[25,2,"I thanked the waiter.","The waiter helped my mother.","The waiter","DO","A","","The waiter whom I thanked helped my mother.",38,14,0],
+[26,3,"The chef gave a sandwich to the girl.","The girl was very hungry.","The girl","IO","A","alternating","The girl to whom the chef gave a sandwich was very hungry.",21,39,0]
+];
+
+// [pres, id, sentence, NPAH, type, animacy, errorCode, verbClass, draft]
+const GJT_RAW = [
+[1,8,"The printer which she bought uses very little ink.","DO","Gram","I","","",0],
+[2,39,"The boy who the chef gave a sandwich to him was very hungry.","IO","Ungram","A","RP","alternating",0],
+[3,22,"The chair which I was sitting suddenly broke.","OBL","Ungram","I","PREP","",0],
+[4,9,"The shelter to which the charity distributed blankets houses many families.","IO","Gram","I","","PD-only",0],
+[5,28,"The chair on which I was sitting suddenly broke.","OBL","Gram","I","","",0],
+[6,1,"The doctor who work at the city hospital treated the child.","SU","Ungram","A","AGR","",0],
+[7,47,"The company whose main office was in Casablanca closed last year.","GEN","Gram","I","","",0],
+[8,30,"The desk which this table is wider than it is in my office.","OCOMP","Ungram","I","RP","",0],
+[9,40,"My friend with whom I went to the cinema loved the movie.","OBL","Gram","A","","",0],
+[10,2,"The actor whom we met won the award.","DO","Gram","A","","",0],
+[11,42,"The boy who Omar is taller won the race.","OCOMP","Ungram","A","PREP","",0],
+[12,20,"The museum which we visited displays Roman coins.","DO","Gram","I","","",0],
+[13,52,"The clerk which the customer asked the time was very kind.","IO","Ungram","A","WRONG","DOC-only",1],
+[14,12,"The gate which the red wall is higher needs paint.","OCOMP","Ungram","I","PREP","",0],
+[15,37,"The laptop which is on my desk needs a new battery.","SU","Gram","I","","",0],
+[16,49,"The shop which the fire cost a lot of money is near the station.","IO","Gram","I","","DOC-only",1],
+[17,14,"The nurse whom I thanked her helped my mother.","DO","Ungram","A","RP","",0],
+[18,7,"The bus who serves the airport arrived late.","SU","Ungram","I","WRONG","",0],
+[19,24,"The desk which this table is wider than is in my office.","OCOMP","Gram","I","","",0],
+[20,11,"The house whose windows face the sea belongs to my aunt.","GEN","Gram","I","","",0],
+[21,10,"The actor who the reporter travelled with him won the award.","OBL","Ungram","A","RP","",0],
+[22,19,"The laptop which are on my desk needs a new battery.","SU","Ungram","I","AGR","",0],
+[23,48,"The gate which the red wall is higher than needs paint.","OCOMP","Gram","I","","",0],
+[24,16,"My friend who I went to the cinema loved the movie.","OBL","Ungram","A","PREP","",0],
+[25,35,"The man that his son studies in France teaches physics.","GEN","Ungram","A","GEN","",0],
+[26,38,"The nurse whom I thanked helped my mother.","DO","Gram","A","","",0],
+[27,45,"The shelter which the charity distributed blankets to it houses many families.","IO","Ungram","I","RP","PD-only",0],
+[28,31,"The bus which serves the airport arrived late.","SU","Gram","I","","",0],
+[29,17,"The house which its windows face the sea belongs to my aunt.","GEN","Ungram","I","GEN","",0],
+[30,36,"The runner who Sara is faster than trains every morning.","OCOMP","Gram","A","","",0],
+[31,3,"The school which the company donated computers is in our neighborhood.","IO","Ungram","I","PREP","PD-only",0],
+[32,23,"The man whose son studies in France teaches physics.","GEN","Gram","A","","",0],
+[33,13,"The doctor who works at the city hospital treated the child.","SU","Gram","A","","",0],
+[34,18,"The runner which Sara is faster than trains every morning.","OCOMP","Ungram","A","WRONG","",0],
+[35,34,"The computer which the teacher drew a picture with it is new.","OBL","Ungram","I","RP","",0],
+[36,21,"The boy to whom the chef gave a sandwich was very hungry.","IO","Gram","A","","alternating",0],
+[37,5,"The company that its main office was in Casablanca closed last year.","GEN","Ungram","I","GEN","",0],
+[38,4,"The actor with whom the reporter travelled won the award.","OBL","Gram","A","","",0],
+[39,25,"The student who is wearing a green jacket answered every question.","SU","Gram","A","","",0],
+[40,27,"The tourists who the guide described the map were from Spain.","IO","Ungram","A","PREP","PD-only",0],
+[41,46,"The computer with which the teacher drew a picture is new.","OBL","Gram","I","","",0],
+[42,44,"The printer which she bought it uses very little ink.","DO","Ungram","I","RP","",0],
+[43,51,"The clerk whom the customer asked the time was very kind.","IO","Gram","A","","DOC-only",1],
+[44,32,"The student which is wearing a green jacket answered every question.","SU","Ungram","A","WRONG","",0],
+[45,29,"The girl whose dog is chasing a ball is waving at us.","GEN","Gram","A","","",0],
+[46,50,"The shop which the fire cost it a lot of money is near the station.","IO","Ungram","I","RP","DOC-only",1],
+[47,6,"The boy who Omar is taller than won the race.","OCOMP","Gram","A","","",0],
+[48,43,"The museum who we visited displays Roman coins.","DO","Ungram","I","WRONG","",0],
+[49,33,"The tourists to whom the guide described the map were from Spain.","IO","Gram","A","","PD-only",0],
+[50,41,"The girl who her dog is chasing a ball is waving at us.","GEN","Ungram","A","GEN","",0],
+[51,15,"The school to which the company donated computers is in our neighborhood.","IO","Gram","I","","PD-only",0],
+[52,26,"The actor which we met won the award.","DO","Ungram","A","WRONG","",0]
+];
+
+// GJT minimal pairs (same lexical frame), by item ID.
+const GJT_PAIRS = [[8,44],[39,21],[22,28],[9,45],[1,13],[47,5],[30,24],[40,16],[2,26],[42,6],[20,43],[52,51],[12,48],[37,19],[49,50],[14,38],[7,31],[11,17],[10,4],[35,23],[36,18],[3,15],[34,46],[25,32],[27,33],[29,41]];
+
+// Attention items: inserted AFTER these GJT presentation numbers; real items are never renumbered.
+const CATCH_ITEMS = [
+  {uid:"CATCH-C1", afterPres:17, text:"My brother lives in Rabat with his family.", expect:"high"},
+  {uid:"CATCH-C2", afterPres:35, text:"Book the table on quickly green was.", expect:"low"}
+];
+
+// Optional verb-frame control block. PLACEHOLDERS: replace with normed items before use.
+const FRAME_ITEMS = [
+  {id:"F1", text:"The customer asked the clerk the time.", type:"Gram", verb:"ask", vclass:"DOC-only"},
+  {id:"F2", text:"The customer asked to the clerk the time.", type:"Ungram", verb:"ask", vclass:"DOC-only"},
+  {id:"F3", text:"The fire cost the shop a lot of money.", type:"Gram", verb:"cost", vclass:"DOC-only"},
+  {id:"F4", text:"The fire cost to the shop a lot of money.", type:"Ungram", verb:"cost", vclass:"DOC-only"},
+  {id:"F5", text:"The company donated computers to the school.", type:"Gram", verb:"donate", vclass:"PD-only"},
+  {id:"F6", text:"The company donated the school computers.", type:"Ungram", verb:"donate", vclass:"PD-only"}
+];
+
+const SCALE = [
+  {n:1, main:"Completely Incorrect", sub:"Definitely ungrammatical", c:"var(--s1)"},
+  {n:2, main:"Incorrect", sub:"Probably ungrammatical", c:"var(--s2)"},
+  {n:3, main:"Somewhat Incorrect", sub:"Maybe ungrammatical", c:"var(--s3)"},
+  {n:4, main:"Somewhat Correct", sub:"Maybe grammatical", c:"var(--s4)"},
+  {n:5, main:"Correct", sub:"Probably grammatical", c:"var(--s5)"},
+  {n:6, main:"Completely Correct", sub:"Definitely grammatical", c:"var(--s6)"}
+];
+
+/* ============================================================
+   Derived structures
+   ============================================================ */
+const SCT = SCT_RAW.map(r => ({uid:"SCT-"+r[1], pres:r[0], id:r[1], s1:r[2], s2:r[3], prompt:r[4], npah:r[5], anim:r[6], vclass:r[7], target:r[8], gram:r[9], ungram:r[10], draft:!!r[11]}));
+const GJT = GJT_RAW.map(r => ({uid:"GJT-"+r[1], pres:r[0], id:r[1], text:r[2], npah:r[3], type:r[4], anim:r[5], err:r[6], vclass:r[7], draft:!!r[8]}));
+const GJT_BY_ID = {}; GJT.forEach(g => GJT_BY_ID[g.id] = g);
+const PAIR_KEY = {}; GJT_PAIRS.forEach(p => { const k = "P" + Math.min(p[0],p[1]) + "-" + Math.max(p[0],p[1]); PAIR_KEY[p[0]] = k; PAIR_KEY[p[1]] = k; });
+
+const SCT_ACTIVE = SCT.filter(i => CONFIG.includeDraftItems || !i.draft);
+const GJT_ACTIVE = GJT.filter(i => CONFIG.includeDraftItems || !i.draft);
+
+const GJT_SEQ = [];
+GJT_ACTIVE.forEach(it => {
+  GJT_SEQ.push({uid:it.uid, kind:"item", text:it.text, it:it});
+  if (CONFIG.includeCatchItems) CATCH_ITEMS.filter(c => c.afterPres === it.pres).forEach(c => GJT_SEQ.push({uid:c.uid, kind:"catch", text:c.text, it:c}));
+});
+const FRAME_SEQ = FRAME_ITEMS.map(f => ({uid:"FRAME-"+f.id, kind:"frame", text:f.text, it:f}));
+
+const PARTS = ["SCT","GJT"].concat(CONFIG.includeFrameControl ? ["FRAME"] : []);
+const RATE = {
+  GJT:   {seq:GJT_SEQ,   screen:"gjt_item",   review:"gjt_review", next:null},
+  FRAME: {seq:FRAME_SEQ, screen:"frame_item", review:null,         next:"finish"}
+};
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+const app = document.getElementById("app");
+const P = new URLSearchParams(location.search);
+const ADMIN = P.get("admin") === "1";
+const TEST = P.get("test") === "1";
+const STORE_KEY = CONFIG.studyId + ":" + CONFIG.instrumentVersion + ":session";
+
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const nowIso = () => new Date().toISOString();
+const perf = () => (window.performance && performance.now) ? performance.now() : Date.now();
+function uuid(){
+  try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch(e){}
+  return "s-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,10);
+}
+function words(s){ return String(s || "").trim().split(/\s+/).filter(Boolean).length; }
+function mm(q){ try { return window.matchMedia ? window.matchMedia(q).matches : false; } catch(e){ return false; } }
+
+function save(){ if (ADMIN) return; try { if (S) localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch(e){} }
+function loadStored(){ try { const t = localStorage.getItem(STORE_KEY); return t ? JSON.parse(t) : null; } catch(e){ return null; } }
+function clearStored(){ try { localStorage.removeItem(STORE_KEY); } catch(e){} }
+
+async function sha256(str){
+  try {
+    if (!(window.crypto && crypto.subtle && window.TextEncoder)) return null;
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  } catch(e){ return null; }
+}
+
+function deviceInfo(){
+  const coarse = mm("(pointer: coarse)"), fine = mm("(any-pointer: fine)");
+  const ua = navigator.userAgent || "";
+  const sw = (window.screen && screen.width) || 0, sh = (window.screen && screen.height) || 0;
+  const minDim = Math.min(sw || 9999, sh || 9999);
+  const phoneUA = /iPhone|iPod|Android.+Mobile|Windows Phone|Opera Mini|IEMobile/i.test(ua);
+  const tabletUA = /iPad|Tablet|Android(?!.*Mobile)/i.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  let type = "desktop";
+  if (!tabletUA && (phoneUA || (coarse && !fine && minDim < 600))) type = "phone";
+  else if (tabletUA || (coarse && !fine)) type = "tablet";
+  return {device_type:type, pointer: coarse ? (fine ? "mixed" : "coarse") : "fine", screen_w:sw, screen_h:sh, viewport_w:window.innerWidth, viewport_h:window.innerHeight, user_agent:ua};
+}
+
+/* ============================================================
+   Session state (persisted to localStorage for refresh-resume)
+   ============================================================ */
+let S = null;
+let cur = null;              // item currently on screen: {uid, t0, startValue}
+let finishState = "saving";  // saving | saved | failed | local
+let renderToken = 0;
+
+function newState(group, hash, platformPresent){
+  return {
+    v: 3, session_id: uuid(), created_at: nowIso(), group: group,
+    platform_id_hash: hash, platform_id_present: !!platformPresent,
+    is_test: TEST, screen: "consent", idx: 0, fromReview: false,
+    participant_id: "", demo: {}, consent_at: null,
+    resp: {}, submitted: {SCT:false, GJT:false, FRAME:false},
+    times: {}, tab: {leaves:0, away_ms:0, by_part:{}},
+    keyboard_events_seen: false, device: deviceInfo(),
+    rows: {}, outbox: [], completed: false
+  };
+}
+
+function partOf(screen){
+  if (/^sct_/.test(screen)) return "SCT";
+  if (/^gjt_/.test(screen)) return "GJT";
+  if (/^frame_/.test(screen)) return "FRAME";
+  return null;
+}
+function inTask(){ return S && partOf(S.screen) && !S.completed; }
+
+function getResp(st, uid){
+  if (!st.resp[uid]) st.resp[uid] = {value:null, first_value:null, first_resp_ms:null, time_ms:0, visits:0, changes:0, keystrokes:0, last_ts:null};
+  return st.resp[uid];
+}
+
+function enterItem(uid){
+  if (cur && cur.uid === uid) return;
+  const r = getResp(S, uid);
+  r.visits++;
+  cur = {uid:uid, t0:perf(), startValue:r.value};
+}
+function markFirstResponse(uid){
+  const r = getResp(S, uid);
+  if (r.first_resp_ms == null && cur && cur.uid === uid) r.first_resp_ms = Math.round(perf() - cur.t0);
+}
+function leaveItem(){
+  if (!cur) return;
+  const r = getResp(S, cur.uid);
+  r.time_ms += Math.round(perf() - cur.t0);
+  const isSct = cur.uid.indexOf("SCT-") === 0;
+  const hasVal = r.value != null && String(r.value).trim() !== "";
+  if (r.first_value == null && hasVal) r.first_value = r.value;
+  else if (isSct && cur.startValue != null && String(cur.startValue).trim() !== "" && r.value !== cur.startValue) r.changes++;
+  r.last_ts = nowIso();
+  const uid = cur.uid;
+  cur = null;
+  enqueueItem(uid);
+  save();
+  flush();
+}
+
+/* ============================================================
+   Row builders (one row per item per participant, long format)
+   ============================================================ */
+function baseRow(st){
+  const d = st.demo || {};
+  return {
+    study_id: CONFIG.studyId, instrument_version: CONFIG.instrumentVersion,
+    session_id: st.session_id, participant_id: st.participant_id, group: st.group,
+    platform_id_hash: st.platform_id_hash || "", is_test: !!st.is_test,
+    include_draft_items: CONFIG.includeDraftItems, include_catch_items: CONFIG.includeCatchItems,
+    device_type: st.device.device_type, pointer: st.device.pointer,
+    screen_w: st.device.screen_w, screen_h: st.device.screen_h,
+    keyboard_events_seen: !!st.keyboard_events_seen,
+    age: d.age || "", gender: d.gender || "", education: d.education || "",
+    first_languages: d.first_languages || "", other_languages: d.other_languages || "",
+    years_english: d.years_english || "", proficiency_self: d.proficiency || "",
+    institution: d.institution || "", class_group: d.class_group || "",
+    study_abroad: d.study_abroad || "", abroad_months: d.abroad_months || "",
+    country: d.country || ""
+  };
+}
+
+function sctFlags(prefix, cont){
+  const full = (prefix + " " + (cont || "")).trim();
+  const c = cont || "";
+  return {
+    flag_conjunction: /\b(and|but|because)\b/i.test(c),
+    flag_no_rel_pronoun: !/\b(who|whom|which|that|whose)\b/i.test(c),
+    flag_possible_resumptive: /\b(who|whom|which|that|whose)\b.*\b(him|her|it|them|its|his|their|he|she|they)\b/i.test(c),
+    word_count: words(full),
+    continuation_word_count: words(c)
+  };
+}
+
+function gjtScore(type, rating){
+  if (rating == null) return {binary_score:"", classification:"no_response"};
+  const ok = (type === "Gram") ? rating >= 4 : rating <= 3;
+  return {binary_score: ok ? 1 : 0, ok:ok};
+}
+
+function itemRow(st, uid){
+  const r = getResp(st, uid);
+  const common = {
+    item_uid: uid, n_visits: r.visits, n_changes: r.changes,
+    time_on_item_ms: r.time_ms, first_response_latency_ms: r.first_resp_ms == null ? "" : r.first_resp_ms,
+    answered_at: r.last_ts || ""
+  };
+  if (uid.indexOf("SCT-") === 0){
+    const it = SCT.find(x => x.uid === uid);
+    const cont = (r.value || "").trim();
+    const first = r.first_value == null ? "" : String(r.first_value).trim();
+    return Object.assign(baseRow(st), {
+      sheet:"sct", task:"SCT", item_type:"item", item_id: it.id, presentation_position: it.pres,
+      npah: it.npah, animacy: it.anim, verb_class: it.vclass, is_draft: it.draft,
+      prompt: it.prompt, source_1: it.s1, source_2: it.s2, target: it.target,
+      gjt_gram_match: it.gram, gjt_ungram_match: it.ungram,
+      prefix: it.prompt, continuation: cont, full_sentence: cont ? it.prompt + " " + cont : "",
+      first_response: first ? it.prompt + " " + first : "",
+      n_keystrokes: r.keystrokes
+    }, common, sctFlags(it.prompt, cont), {
+      score:"", error_code:"", variant:"", register_flag:"", frame_deviation:"", rater_id:"", rater_note:""
+    });
+  }
+  if (uid.indexOf("GJT-") === 0){
+    const it = GJT.find(x => x.uid === uid);
+    const rating = r.value;
+    const sc = gjtScore(it.type, rating);
+    let cls = "no_response";
+    if (rating != null) cls = sc.ok ? "correct" : (it.type === "Ungram" ? "GJT-" + it.err : "GJT-REJ-" + it.npah);
+    return Object.assign(baseRow(st), {
+      sheet:"gjt", task:"GJT", item_type:"item", item_id: it.id, presentation_position: it.pres,
+      sentence: it.text, npah: it.npah, gram_type: it.type, animacy: it.anim,
+      error_code: it.err, verb_class: it.vclass, is_draft: it.draft, pair_key: PAIR_KEY[it.id] || "",
+      rating: rating == null ? "" : rating, first_rating: r.first_value == null ? "" : r.first_value,
+      binary_score: sc.binary_score, classification: cls
+    }, common);
+  }
+  if (uid.indexOf("CATCH-") === 0){
+    const c = CATCH_ITEMS.find(x => x.uid === uid);
+    const rating = r.value;
+    const pass = rating == null ? "" : (c.expect === "high" ? rating >= 4 : rating <= 3);
+    return Object.assign(baseRow(st), {
+      sheet:"gjt", task:"GJT", item_type:"catch", item_id: c.uid, presentation_position: "",
+      inserted_after_pres: c.afterPres, sentence: c.text, catch_expect: c.expect,
+      rating: rating == null ? "" : rating, first_rating: r.first_value == null ? "" : r.first_value,
+      catch_pass: pass
+    }, common);
+  }
+  if (uid.indexOf("FRAME-") === 0){
+    const f = FRAME_ITEMS.find(x => "FRAME-" + x.id === uid);
+    const rating = r.value;
+    const sc = gjtScore(f.type, rating);
+    return Object.assign(baseRow(st), {
+      sheet:"frame", task:"FRAME", item_type:"frame_control", item_id: f.id,
+      presentation_position: FRAME_ITEMS.indexOf(f) + 1, sentence: f.text, gram_type: f.type,
+      verb: f.verb, verb_class: f.vclass, rating: rating == null ? "" : rating,
+      first_rating: r.first_value == null ? "" : r.first_value, binary_score: sc.binary_score
+    }, common);
+  }
+  return null;
+}
+
+function computeFlags(st){
+  const ratings = GJT_ACTIVE.map(it => (st.resp[it.uid] || {}).value);
+  let run = 0, maxRun = 0, prev = null;
+  ratings.forEach(v => { if (v != null && v === prev) run++; else run = 1; prev = v; if (v != null) maxRun = Math.max(maxRun, run); });
+  const tooFast = GJT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return r && r.value != null && r.time_ms < CONFIG.minGjtMs; }).length;
+  const sctShort = SCT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return !r || words(r.value) < CONFIG.minSctWords; }).length;
+  let catchFail = 0, catchN = 0;
+  if (CONFIG.includeCatchItems) CATCH_ITEMS.forEach(c => { const r = st.resp[c.uid]; if (r && r.value != null){ catchN++; const pass = c.expect === "high" ? r.value >= 4 : r.value <= 3; if (!pass) catchFail++; } });
+  const t0 = st.times.sct_start ? Date.parse(st.times.sct_start) : null;
+  const t1 = st.times.finish ? Date.parse(st.times.finish) : (st.times.gjt_end ? Date.parse(st.times.gjt_end) : null);
+  const totalMin = (t0 && t1) ? Math.round((t1 - t0) / 6000) / 10 : "";
+  const flags = {
+    flag_catch_fail: catchFail > 0, catch_answered: catchN, catch_failed: catchFail,
+    straight_line_max_run: maxRun, flag_straight_line: maxRun >= CONFIG.straightLineRun,
+    gjt_too_fast_count: tooFast, sct_short_answer_count: sctShort,
+    total_minutes: totalMin, flag_too_short_total: totalMin !== "" && totalMin < CONFIG.minTotalMinutes,
+    tab_leaves: st.tab.leaves, tab_away_ms: st.tab.away_ms,
+    tab_leaves_sct: (st.tab.by_part.SCT || 0), tab_leaves_gjt: (st.tab.by_part.GJT || 0)
+  };
+  flags.flag_any = !!(flags.flag_catch_fail || flags.flag_straight_line || flags.flag_too_short_total || tooFast >= 10 || sctShort >= 5);
+  return flags;
+}
+
+function sessionRow(st){
+  const ms = (a,b) => (st.times[a] && st.times[b]) ? (Date.parse(st.times[b]) - Date.parse(st.times[a])) : "";
+  const gjtScored = GJT_ACTIVE.map(it => itemRow(st, it.uid));
+  const gjtTotal = gjtScored.reduce((s,r) => s + (r.binary_score === 1 ? 1 : 0), 0);
+  const sctAnswered = SCT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return r && String(r.value || "").trim(); }).length;
+  return Object.assign(baseRow(st), {
+    sheet:"session", item_uid:"SESSION", created_at: st.created_at, consent_at: st.consent_at || "",
+    sct_start: st.times.sct_start || "", sct_end: st.times.sct_end || "",
+    gjt_start: st.times.gjt_start || "", gjt_end: st.times.gjt_end || "",
+    frame_start: st.times.frame_start || "", frame_end: st.times.frame_end || "",
+    finished_at: st.times.finish || "", sct_duration_ms: ms("sct_start","sct_end"),
+    gjt_duration_ms: ms("gjt_start","gjt_end"), completed: !!st.completed,
+    sct_items: SCT_ACTIVE.length, sct_answered: sctAnswered,
+    gjt_items: GJT_ACTIVE.length, gjt_total_binary: gjtTotal,
+    task_order: PARTS.join(">"), viewport_w: st.device.viewport_w, viewport_h: st.device.viewport_h,
+    user_agent: st.device.user_agent
+  }, computeFlags(st));
+}
+
+function stampAndQueue(st, row){
+  const prev = st.rows[row.item_uid];
+  row.row_version = (prev ? prev.row_version : 0) + 1;
+  row.saved_at = nowIso();
+  st.rows[row.item_uid] = row;
+  st.outbox = st.outbox.filter(r => !(r.session_id === row.session_id && r.item_uid === row.item_uid));
+  st.outbox.push(row);
+}
+function enqueueItem(uid){ const row = itemRow(S, uid); if (row) stampAndQueue(S, row); }
+function enqueueSession(){ stampAndQueue(S, sessionRow(S)); }
+
+/* ============================================================
+   Saving: incremental, confirmed, with retry
+   ============================================================ */
+let sending = false, backoff = 2000, retryTimer = null;
+async function flush(){
+  if (!CONFIG.dataEndpoint || !S || !S.outbox.length || sending) return;
+  sending = true;
+  const batch = S.outbox.slice(0, 40);
+  try {
+    const res = await fetch(CONFIG.dataEndpoint, {
+      method: "POST",
+      headers: {"Content-Type": "text/plain;charset=utf-8"},
+      body: JSON.stringify({token: CONFIG.studyToken, rows: batch})
+    });
+    const j = await res.json();
+    if (!j || !j.ok) throw new Error((j && j.error) || "save_rejected");
+    S.outbox = S.outbox.filter(r => !batch.some(b => b.session_id === r.session_id && b.item_uid === r.item_uid && b.row_version === r.row_version));
+    backoff = 2000;
+    save();
+    sending = false;
+    if (S.outbox.length) setTimeout(flush, 50);
+  } catch(e){
+    sending = false;
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(flush, backoff);
+    backoff = Math.min(backoff * 2, 60000);
+  }
+}
+function waitForEmptyOutbox(timeoutMs){
+  return new Promise(resolve => {
+    const t0 = Date.now();
+    (function poll(){
+      if (!S.outbox.length) return resolve(true);
+      if (Date.now() - t0 > timeoutMs) return resolve(false);
+      flush();
+      setTimeout(poll, 600);
+    })();
+  });
+}
+window.addEventListener("online", () => flush());
+setInterval(() => flush(), 30000);
+
+/* ============================================================
+   Downloads (backup and researcher use)
+   ============================================================ */
+function toCsv(rows){
+  const cols = [];
+  rows.forEach(r => Object.keys(r).forEach(k => { if (cols.indexOf(k) < 0) cols.push(k); }));
+  const cell = v => { const s = v == null ? "" : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  return "\ufeff" + [cols.join(",")].concat(rows.map(r => cols.map(c => cell(r[c])).join(","))).join("\r\n");
+}
+function download(name, text, mime){
+  const blob = new Blob([text], {type: mime});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+function allRowsOf(st){
+  const rows = [];
+  SCT_ACTIVE.forEach(it => rows.push(st.rows[it.uid] || itemRow(st, it.uid)));
+  GJT_SEQ.forEach(s => rows.push(st.rows[s.uid] || itemRow(st, s.uid)));
+  if (CONFIG.includeFrameControl) FRAME_SEQ.forEach(s => rows.push(st.rows[s.uid] || itemRow(st, s.uid)));
+  return rows;
+}
+function downloadCsv(st){ download(fileBase(st) + "_items.csv", toCsv(allRowsOf(st)), "text/csv;charset=utf-8"); }
+function downloadJson(st){
+  const out = {study_id: CONFIG.studyId, instrument_version: CONFIG.instrumentVersion, exported_at: nowIso(),
+               session: st.rows.SESSION || sessionRow(st), items: allRowsOf(st)};
+  download(fileBase(st) + "_all.json", JSON.stringify(out, null, 2), "application/json");
+}
+function fileBase(st){ return CONFIG.studyId + "_" + (st.participant_id || "anon") + "_" + st.session_id.slice(0,8); }
+
+/* ============================================================
+   Dialog
+   ============================================================ */
+function confirmDialog(title, body, okLabel){
+  const dlg = document.getElementById("dlg");
+  if (!dlg || typeof dlg.showModal !== "function") return Promise.resolve(window.confirm(title + "\n\n" + body));
+  document.getElementById("dlg-title").textContent = title;
+  document.getElementById("dlg-body").textContent = body;
+  document.getElementById("dlg-ok").textContent = okLabel || "Submit";
+  return new Promise(resolve => {
+    const ok = document.getElementById("dlg-ok"), cancel = document.getElementById("dlg-cancel");
+    const done = v => { ok.onclick = null; cancel.onclick = null; dlg.close(); resolve(v); };
+    ok.onclick = () => done(true); cancel.onclick = () => done(false);
+    dlg.oncancel = e => { e.preventDefault(); done(false); };
+    dlg.showModal();
+    cancel.focus();
+  });
+}
+
+/* ============================================================
+   Navigation and rendering
+   ============================================================ */
+function go(screen, idx){
+  leaveItem();
+  const prevScreen = S.screen;
+  S.screen = screen;
+  S.idx = idx || 0;
+  save();
+  const isRate = screen === "gjt_item" || screen === "frame_item";
+  if (isRate && prevScreen === screen){
+    // 300 ms blank between judgment items to reduce carry-over
+    const token = ++renderToken;
+    app.innerHTML = header() + '<main><div class="stim-wrap" aria-hidden="true"></div></main>';
+    setTimeout(() => { if (token === renderToken) render(); }, 300);
+  } else {
+    render();
+  }
+  window.scrollTo(0, 0);
+}
+
+function header(){
+  const part = S ? partOf(S.screen) : null;
+  let left = '<span class="brand">English sentence study</span>', right = "", pct = null;
+  if (part){
+    const n = PARTS.indexOf(part) + 1;
+    const name = {SCT:"Sentence combining", GJT:"Sentence judgment", FRAME:"Short sentence check"}[part];
+    left = '<span class="brand">Part ' + n + ' of ' + PARTS.length + ' <span class="part">· ' + name + '</span></span>';
+    if (S.screen === "sct_item"){ right = "Item " + (S.idx + 1) + " of " + SCT_ACTIVE.length; pct = (S.idx + 1) / SCT_ACTIVE.length; }
+    if (S.screen === "gjt_item"){ const k = realIndex(S.idx); right = "Item " + k + " of " + GJT_ACTIVE.length; pct = k / GJT_ACTIVE.length; }
+    if (S.screen === "frame_item"){ right = "Item " + (S.idx + 1) + " of " + FRAME_SEQ.length; pct = (S.idx + 1) / FRAME_SEQ.length; }
+  }
+  return '<header class="top"><div class="top-inner">' + left + (right ? '<span class="progress-text">' + right + '</span>' : '') + '</div>' +
+         (pct != null ? '<div class="bar"><span style="width:' + Math.round(pct * 100) + '%"></span></div>' : '') + '</header>';
+}
+function realIndex(i){ let k = 0; for (let j = 0; j <= i && j < GJT_SEQ.length; j++) if (GJT_SEQ[j].kind === "item") k++; return Math.max(k, 1); }
+
+function page(inner, narrow){ window.onresize = null; app.innerHTML = header() + '<main' + (narrow ? ' class="narrow"' : '') + '>' + inner + '</main>'; }
+
+function render(){
+  renderToken++;
+  const fn = SCREENS[S.screen];
+  if (!fn){ S.screen = "consent"; return render(); }
+  fn();
+  const h = app.querySelector("h1");
+  if (h && !app.querySelector("textarea, .scale")) { h.setAttribute("tabindex","-1"); h.focus({preventScroll:true}); }
+}
+
+/* ============================================================
+   Screens
+   ============================================================ */
+const R = CONFIG.researcher;
+const SCREENS = {
+
+  device_warn(){
+    page('<h1>A computer works best for this study</h1>' +
+      '<p>Part 1 asks you to type sentences. On a phone, the keyboard may change your words automatically, which affects the results.</p>' +
+      '<p>If you can, open the same link on a laptop or desktop computer. Otherwise you can continue here.</p>' +
+      '<div class="actions end"><button class="btn" data-act="device_continue">Continue on this device</button></div>', true);
+  },
+
+  resume(){
+    page('<h1>Welcome back</h1>' +
+      '<p>This browser has an unfinished session' + (S.participant_id ? ' for Participant ID <strong>' + esc(S.participant_id) + '</strong>' : '') + '.</p>' +
+      '<p>If this is you, continue where you left off. If you are a different person, start a new session.</p>' +
+      '<div class="actions"><button class="btn ghost" data-act="resume_new">Start a new session</button><button class="btn" data-act="resume_continue">Continue where I left off</button></div>', true);
+  },
+
+  consent(){
+    page('<h1>Participant information and consent</h1>' +
+      '<div class="card">' +
+      '<p>You are invited to take part in a research study on how learners of English build and judge English sentences.</p>' +
+      '<p>The study has two parts. In Part 1 you will combine pairs of short sentences into one sentence. In Part 2 you will read sentences and rate how correct they are. The study takes ' + esc(CONFIG.durationText) + '.</p>' +
+      '<p><strong>Taking part is voluntary.</strong> You can stop at any time by closing your browser, without any penalty. Answers you have already given may be stored, and you can ask for them to be deleted using your Participant ID.</p>' +
+      '<p>There are no known risks beyond everyday computer use. There is no direct benefit to you, but the study may help improve English language teaching.</p>' +
+      '<div class="note"><strong>We do not collect your name or email address.</strong> You will create your own Participant ID (for example, <em>BlueTiger27</em>). Please do not use your real name, and keep this ID: you will need it if you want your data deleted.</div>' +
+      '<p>Your responses are stored in a password-protected Google Sheet that only the researcher can access.</p>' +
+      '<p>For questions or to ask for your data to be deleted, contact ' + esc(R.name) + ', ' + esc(R.institution) + ', at <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>.</p>' +
+      '<p>By agreeing, you confirm that you are taking part voluntarily and that you are at least ' + CONFIG.minAge + ' years old.</p>' +
+      '</div>' +
+      '<div class="actions"><button class="btn quiet" data-act="decline">I do not agree</button><button class="btn" data-act="agree">I agree to take part</button></div>', true);
+  },
+
+  declined(){
+    page('<h1>Thank you for your time</h1><p>You chose not to take part. Nothing has been recorded, and you can close this page.</p>', true);
+  },
+
+  about(){
+    const g = S.group, d = S.demo || {};
+    const opt = (v, cur) => '<option' + (String(cur) === String(v) ? ' selected' : '') + '>' + esc(v) + '</option>';
+    const sel = (name, label, options, cur, req) => '<div class="field"><label for="' + name + '">' + label + '</label><select id="' + name + '" name="' + name + '"' + (req ? ' required' : '') + '><option value="">Select…</option>' + options.map(o => opt(o, cur)).join("") + '</select></div>';
+    let html = '<h1>About you</h1><p class="muted">These questions help us describe the group of people who took part.</p>' +
+      '<form id="about" class="form card" novalidate>' +
+      '<div class="field full"><label for="pid">Create a Participant ID</label><input id="pid" name="pid" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" value="' + esc(S.participant_id) + '" required>' +
+      '<div class="help">4 to 20 letters or numbers, no spaces, for example BlueTiger27. Do not use your real name. Write it down: you will need it to ask for your data to be deleted.</div></div>' +
+      '<div class="field"><label for="age">Age</label><input id="age" name="age" type="number" inputmode="numeric" min="' + CONFIG.minAge + '" max="99" value="' + esc(d.age || "") + '" required></div>' +
+      '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender" required><option value="">Select…</option>' +
+        ["Female","Male","Prefer to self-describe","Prefer not to say"].map(o => opt(o, d.gender_choice)).join("") + '</select></div>' +
+      '<div class="field full ' + (d.gender_choice === "Prefer to self-describe" ? "" : "hidden") + '" id="gender_self_wrap"><label for="gender_self">Please describe</label><input id="gender_self" name="gender_self" value="' + esc(d.gender_self || "") + '"></div>' +
+      sel("education", "Highest education level (completed or current)", ["Secondary school","Bachelor's student","Bachelor's degree","Master's student","Master's degree","Doctoral student","Doctorate (PhD)","Other"], d.education, true) +
+      '<div class="field"><label for="first_languages">First language(s)</label><input id="first_languages" name="first_languages" placeholder="e.g., Moroccan Arabic, Amazigh" value="' + esc(d.first_languages || "") + '" required></div>' +
+      '<div class="field full"><label for="other_languages">Other languages you speak (optional)</label><input id="other_languages" name="other_languages" placeholder="e.g., French, Spanish" value="' + esc(d.other_languages || "") + '"></div>';
+    if (g === "native"){
+      html += sel("country", "Country of residence", ["United Kingdom","United States","Canada","Australia","New Zealand","Ireland","Other"], d.country_choice, true) +
+        '<div class="field ' + (d.country_choice === "Other" ? "" : "hidden") + '" id="country_other_wrap"><label for="country_other">Please specify your country</label><input id="country_other" name="country_other" value="' + esc(d.country_other || "") + '"></div>';
+    } else {
+      html += '<div class="field"><label for="years_english">Years of formal English study</label><input id="years_english" name="years_english" type="number" inputmode="numeric" min="0" max="40" value="' + esc(d.years_english || "") + '" required></div>' +
+        '<div class="field"><label for="proficiency">How good is your English? (self-rating)</label><select id="proficiency" name="proficiency" required><option value="">Select…</option>' +
+          [["1","1 · Beginner"],["2","2"],["3","3"],["4","4 · Intermediate"],["5","5"],["6","6"],["7","7 · Native-like"]].map(o => '<option value="' + o[0] + '"' + (String(d.proficiency) === o[0] ? " selected" : "") + '>' + o[1] + '</option>').join("") + '</select></div>' +
+        '<div class="field"><label for="institution">University or school (optional)</label><input id="institution" name="institution" value="' + esc(d.institution || "") + '"></div>' +
+        '<div class="field"><label for="class_group">Class or group (optional)</label><input id="class_group" name="class_group" value="' + esc(d.class_group || "") + '"></div>' +
+        sel("study_abroad", "Have you lived or studied in an English-speaking country?", ["No","Yes"], d.study_abroad, true) +
+        '<div class="field ' + (d.study_abroad === "Yes" ? "" : "hidden") + '" id="abroad_wrap"><label for="abroad_months">For how many months in total?</label><input id="abroad_months" name="abroad_months" type="number" inputmode="numeric" min="0" max="600" value="' + esc(d.abroad_months || "") + '"></div>';
+    }
+    html += '</form><p class="error" id="about_err" role="alert"></p><div class="actions end"><button class="btn" data-act="about_submit">Continue</button></div>';
+    page(html, true);
+    const toggle = (selId, wrapId, val) => { const s = document.getElementById(selId); if (!s) return; s.addEventListener("change", () => document.getElementById(wrapId).classList.toggle("hidden", s.value !== val)); };
+    toggle("gender", "gender_self_wrap", "Prefer to self-describe");
+    toggle("country", "country_other_wrap", "Other");
+    toggle("study_abroad", "abroad_wrap", "Yes");
+  },
+
+  sct_intro(){
+    page('<h1>Sentence Combining Task: English Relative Clauses</h1>' +
+      '<p class="lede">Please read these instructions carefully before beginning.</p>' +
+      '<p>This task contains ' + SCT_ACTIVE.length + ' items. For each item, you will see two short sentences. Your job is to combine each pair of sentences into <strong>ONE</strong> sentence by using a <strong>relative pronoun</strong> (such as <em>who, which, whom, whose</em>).</p>' +
+      '<p>A preposition may come <strong>before</strong> the relative pronoun (e.g., <em>with whom</em>) or <strong>after</strong> it (e.g., <em>who...with</em>).</p>' +
+      '<h2>Important guidelines</h2><ul class="guide">' +
+      '<li><strong>Begin each answer with the word or words provided</strong> in the prompt.</li>' +
+      '<li><strong>Do NOT use</strong> "and," "but," or "because" to join the sentences.</li>' +
+      '<li><strong>Do NOT omit any information</strong> from the original sentences.</li>' +
+      '<li><strong>Accuracy is more important than speed.</strong> You may take as much time as you need.</li>' +
+      '<li><strong>You may revise your answers</strong> if you think they are incorrect.</li></ul>' +
+      '<div class="note">On screen, the first word or words of each answer are already written for you in bold. Type the rest of the sentence after them.</div>' +
+      '<div class="actions end"><button class="btn" data-act="go" data-to="sct_example">See the example</button></div>', true);
+  },
+
+  sct_example(){
+    page('<h1>Example</h1><div class="card">' +
+      '<p class="label">Original sentences</p><div class="sources"><p>Our teacher sold his old car.</p><p>He bought a new one.</p></div>' +
+      '<p class="label" style="margin-top:18px">Begin with: <strong>Our teacher</strong></p>' +
+      '<p class="label" style="margin-top:18px">Possible correct answer</p>' +
+      '<div class="answer static"><strong>Our teacher</strong> who sold his old car bought a new one.</div>' +
+      '</div><div class="actions"><button class="btn ghost" data-act="go" data-to="sct_intro">Back to instructions</button><button class="btn" data-act="sct_start">Start Part 1</button></div>', true);
+  },
+
+  sct_item(){
+    const i = S.idx, it = SCT_ACTIVE[i];
+    enterItem(it.uid);
+    const r = getResp(S, it.uid);
+    const last = i === SCT_ACTIVE.length - 1;
+    const nav = S.fromReview
+      ? '<div class="actions end"><button class="btn" data-act="sct_back_review">Save and return to review</button></div>'
+      : '<div class="actions"><button class="btn ghost" data-act="sct_prev"' + (i === 0 ? ' disabled' : '') + '>Previous</button><button class="btn" data-act="sct_next">' + (last ? 'Review my answers' : 'Next') + '</button></div>';
+    page('<div class="card"><p class="label">Combine these two sentences into one sentence.</p>' +
+      '<div class="sources" oncopy="return false"><p>' + esc(it.s1) + '</p><p>' + esc(it.s2) + '</p></div></div>' +
+      '<div style="margin-top:20px"><label class="label" for="cont">Your sentence</label>' +
+      '<div class="answer"><span class="prefix" id="prefix">' + esc(it.prompt) + '</span>' +
+      '<textarea id="cont" rows="3" spellcheck="false" autocorrect="off" autocapitalize="off" autocomplete="off" data-gramm="false" data-gramm_editor="false" data-enable-grammarly="false" aria-describedby="prefix sct_err">' + esc(r.value || "") + '</textarea></div>' +
+      '<p class="error" id="sct_err" role="alert"></p></div>' + nav, true);
+    const ta = document.getElementById("cont"), pre = document.getElementById("prefix");
+    const indent = () => { ta.style.textIndent = (pre.offsetWidth + 8) + "px"; };
+    indent(); window.onresize = indent;
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(indent);
+    let saveTimer = null;
+    ta.addEventListener("input", () => {
+      r.value = ta.value; r.keystrokes++;
+      markFirstResponse(it.uid);
+      document.getElementById("sct_err").textContent = "";
+      clearTimeout(saveTimer); saveTimer = setTimeout(save, 400);
+    });
+    ta.addEventListener("keydown", e => { if (e.key === "Enter") e.preventDefault(); });
+    ["paste","drop"].forEach(ev => ta.addEventListener(ev, e => { e.preventDefault(); document.getElementById("sct_err").textContent = "Please type your answer rather than pasting it."; }));
+    ta.focus();
+    const len = ta.value.length; try { ta.setSelectionRange(len, len); } catch(e){}
+  },
+
+  sct_review(){
+    const items = SCT_ACTIVE.map((it, i) => {
+      const v = (getResp(S, it.uid).value || "").trim();
+      return '<li class="' + (v ? "" : "missing") + '"><span class="num">' + it.pres + '</span>' +
+        '<span class="txt">' + (v ? '<span class="pre">' + esc(it.prompt) + '</span> ' + esc(v) : 'No answer yet') + '</span>' +
+        '<button class="btn ghost edit" data-act="sct_edit" data-i="' + i + '">Edit</button></li>';
+    }).join("");
+    page('<h1>Review your answers</h1><p>Check each sentence. Select Edit to change an answer. When you are happy with all of them, submit Part 1.</p>' +
+      '<div class="card"><ul class="rev">' + items + '</ul></div><p class="error" id="rev_err" role="alert"></p>' +
+      '<div class="actions end"><button class="btn" data-act="sct_submit">Submit Part 1</button></div>');
+  },
+
+  sct_break(){
+    page('<h1>Part 1 is complete</h1><p>Thank you. Take a short break if you like.</p><p>In Part 2 you will read sentences and decide how grammatically correct each one is.</p>' +
+      '<div class="actions end"><button class="btn" data-act="go" data-to="gjt_intro">Continue to Part 2</button></div>', true);
+  },
+
+  gjt_intro(){
+    page('<h1>Grammaticality Judgment Task</h1>' +
+      '<p>In this task, you will read ' + GJT_ACTIVE.length + ' sentences. Some of these sentences are grammatically correct, and some are grammatically incorrect.</p>' +
+      '<p>For each sentence, decide whether it is grammatically correct or incorrect. Use the scale below:</p>' +
+      '<div class="scroll"><table class="t"><tr>' + SCALE.map(s => '<th>' + s.n + '</th>').join("") + '</tr><tr>' + SCALE.map(s => '<td>' + s.main + '<br><span class="muted small">' + s.sub + '</span></td>').join("") + '</tr></table></div>' +
+      '<h2>Important guidelines</h2><ul class="guide">' +
+      '<li>You may take as much time as you need. Please read each sentence carefully before making your judgment.</li>' +
+      '<li>You may revise your answers if you change your mind.</li>' +
+      '<li>Do not use dictionaries or mobile phones. Work independently.</li>' +
+      '<li>Select the number (1–6) that best represents your judgment.</li></ul>' +
+      '<div class="actions end"><button class="btn" data-act="go" data-to="gjt_examples">See the worked examples</button></div>', true);
+  },
+
+  gjt_examples(){
+    const ex = [
+      ["The man who lives next door is a doctor.", 6, 'Completely correct (subject–verb agreement: "man…lives").'],
+      ["The man who live next door is a doctor.", 1, 'Completely incorrect (subject–verb agreement error: "man…live").'],
+      ["The book that I read was interesting.", 6, "Completely correct (no resumptive pronoun needed)."],
+      ["The book that I read it was interesting.", 1, 'Completely incorrect (resumptive pronoun "it" is retained).'],
+      ["The teacher whose class I like is friendly.", 6, 'Completely correct (possessive relative pronoun "whose").'],
+      ["The teacher who her class I like is friendly.", 1, 'Completely incorrect (genitive error: "her" retained).']
+    ];
+    page('<h1>Worked examples</h1><div class="card">' + ex.map(e => '<div class="ex"><div class="stim">' + esc(e[0]) + '</div>' +
+      '<span class="chip ' + (e[1] === 6 ? "hi" : "lo") + '">' + e[1] + ' · ' + SCALE[e[1]-1].main + '</span><p class="muted small"><em>' + esc(e[2]) + '</em></p></div>').join("") + '</div>' +
+      '<div class="actions"><button class="btn ghost" data-act="go" data-to="gjt_intro">Back to instructions</button><button class="btn" data-act="gjt_start">Start Part 2</button></div>', true);
+  },
+
+  gjt_item(){ rateScreen("GJT"); },
+
+  gjt_review(){
+    const rows = GJT_ACTIVE.map(it => {
+      const v = getResp(S, it.uid).value;
+      return '<li class="' + (v == null ? "missing" : "") + '"><span class="num">' + it.pres + '</span><span class="txt" style="font-family:var(--serif);color:var(--ink);font-size:18px">' + esc(it.text) + '</span>' +
+        '<span class="mini" role="group" aria-label="Rating for sentence ' + it.pres + '">' + SCALE.map(s => '<button style="--c:' + s.c + '" aria-pressed="' + (v === s.n) + '" data-act="gjt_review_rate" data-uid="' + it.uid + '" data-v="' + s.n + '" title="' + s.main + '">' + s.n + '</button>').join("") + '</span></li>';
+    }).join("");
+    page('<h1>Review your ratings</h1><p>You can change any rating here by selecting a different number. When you are happy with all of them, submit Part 2.</p>' +
+      '<p class="muted small">1 = Completely Incorrect · 6 = Completely Correct</p>' +
+      '<div class="card"><ul class="rev">' + rows + '</ul></div><p class="error" id="rev_err" role="alert"></p>' +
+      '<div class="actions end"><button class="btn" data-act="gjt_submit">Submit Part 2</button></div>');
+  },
+
+  frame_intro(){
+    page('<h1>One last short part</h1><p>You will rate ' + FRAME_SEQ.length + ' short sentences with the same 1–6 scale. There is no review screen for this part.</p>' +
+      '<div class="actions end"><button class="btn" data-act="frame_start">Start</button></div>', true);
+  },
+
+  frame_item(){ rateScreen("FRAME"); },
+
+  finish(){
+    let body;
+    if (finishState === "saving"){
+      body = '<h1>Saving your responses…</h1><p>Please keep this page open for a moment.</p>';
+    } else if (finishState === "saved"){
+      body = '<h1>Thank you. Your responses have been saved.</h1>' +
+        '<p>Your Participant ID is <strong>' + esc(S.participant_id) + '</strong>. Keep it if you might want your data deleted later.</p>' +
+        (CONFIG.completionCode ? '<p>Your completion code is <strong>' + esc(CONFIG.completionCode) + '</strong>.</p>' : '') +
+        (CONFIG.completionUrl ? '<p class="muted">You will be redirected in 5 seconds.</p>' : '<p>You can now close this page.</p>') +
+        (CONFIG.alwaysOfferDownload ? dlButtons() : '');
+    } else if (finishState === "local"){
+      body = '<h1>Thank you. You have finished.</h1>' +
+        '<p>Your Participant ID is <strong>' + esc(S.participant_id) + '</strong>.</p>' +
+        '<div class="warnbox">Online saving is not set up for this copy of the study. Please download your answers and send both files to the researcher at <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>.</div>' + dlButtons();
+    } else {
+      body = '<h1>Your answers are not saved online yet</h1>' +
+        '<p>The connection to the data server did not work. Your answers are kept in this browser and will be sent automatically when the connection returns.</p>' +
+        '<div class="warnbox">To be safe, please download your answers and email both files to <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>, with your Participant ID <strong>' + esc(S.participant_id) + '</strong>.</div>' +
+        dlButtons() + '<div class="actions end"><button class="btn ghost" data-act="retry_save">Try saving again</button></div>';
+    }
+    page(body, true);
+  },
+
+  admin_login(){
+    page('<h1>Researcher mode</h1><form id="adm" class="card"><div class="field"><label for="apw">Password</label><input id="apw" type="password" autocomplete="off"></div>' +
+      '<p class="error" id="adm_err"></p><div class="actions end"><button class="btn" type="submit">Open</button></div></form>', true);
+    document.getElementById("adm").addEventListener("submit", e => {
+      e.preventDefault();
+      if (document.getElementById("apw").value === CONFIG.adminPassword){ S.screen = "admin"; render(); }
+      else document.getElementById("adm_err").textContent = "That password is not correct.";
+    });
+  },
+
+  admin(){ renderAdmin(); }
+};
+
+function dlButtons(){
+  return '<div class="actions" style="justify-content:flex-start"><button class="btn" data-act="dl_csv">Download answers (CSV)</button><button class="btn ghost" data-act="dl_json">Download full record (JSON)</button></div>';
+}
+
+/* Shared 1–6 rating screen for the GJT and the optional frame block */
+function rateScreen(task){
+  const cfg = RATE[task], i = S.idx, entry = cfg.seq[i];
+  enterItem(entry.uid);
+  const v = getResp(S, entry.uid).value;
+  const last = i === cfg.seq.length - 1;
+  const nextLabel = last ? (cfg.review ? "Review my ratings" : "Finish") : "Next";
+  page('<div class="stim-wrap"><div class="stim" oncopy="return false">' + esc(entry.text) + '</div></div>' +
+    '<div class="scale" role="group" aria-label="Rate this sentence">' + SCALE.map(s =>
+      '<button style="--c:' + s.c + '" aria-pressed="' + (v === s.n) + '" data-act="rate" data-v="' + s.n + '"><span class="n">' + s.n + '</span><span class="m">' + s.main + '</span><span class="s">' + s.sub + '</span></button>').join("") + '</div>' +
+    '<div class="scale-ends"><span>Incorrect</span><span>Correct</span></div>' +
+    '<p class="keyhint">You can also press keys 1–6 to choose, and Enter to go on.</p>' +
+    '<p class="error" id="rate_err" role="alert"></p>' +
+    '<div class="actions"><button class="btn ghost" data-act="rate_prev"' + (i === 0 ? ' disabled' : '') + '>Previous</button><button class="btn" data-act="rate_next" id="rate_next">' + nextLabel + '</button></div>');
+}
+
+function setRating(uid, v){
+  const r = getResp(S, uid);
+  if (r.value != null && r.value !== v) r.changes++;
+  r.value = v;
+  markFirstResponse(uid);
+  if (r.first_value == null) r.first_value = v;
+  save();
+}
+
+/* ============================================================
+   Actions
+   ============================================================ */
+const ACTIONS = {
+  go: b => go(b.dataset.to),
+  device_continue: () => go("consent"),
+  resume_continue: () => { const to = S._resumeTo || "consent"; delete S._resumeTo; S.screen = to; save(); render(); },
+  resume_new: () => {
+    const carry = S.outbox || [];
+    S = newState(S.group, S.platform_id_hash, S.platform_id_present);
+    S.outbox = carry;
+    save(); render(); flush();
+  },
+  agree: () => { S.consent_at = nowIso(); go("about"); },
+  decline: () => { S.screen = "declined"; save(); render(); },   // nothing is queued; unsent rows from an earlier person on this browser are kept
+
+  about_submit: () => {
+    const f = document.getElementById("about");
+    const val = id => { const el = document.getElementById(id); return el ? el.value.trim() : ""; };
+    const bad = [];
+    f.querySelectorAll(".field").forEach(x => x.classList.remove("invalid"));
+    const mark = id => { const el = document.getElementById(id); if (el) el.closest(".field").classList.add("invalid"); bad.push(id); };
+    const pid = val("pid");
+    if (!/^[A-Za-z0-9]{4,20}$/.test(pid)) mark("pid");
+    const age = parseInt(val("age"), 10);
+    if (!(age >= CONFIG.minAge && age <= 99)) mark("age");
+    if (!val("gender")) mark("gender");
+    if (val("gender") === "Prefer to self-describe" && !val("gender_self")) mark("gender_self");
+    if (!val("education")) mark("education");
+    if (!val("first_languages")) mark("first_languages");
+    if (S.group === "native"){
+      if (!val("country")) mark("country");
+      if (val("country") === "Other" && !val("country_other")) mark("country_other");
+    } else {
+      const y = val("years_english");
+      if (y === "" || isNaN(+y) || +y < 0 || +y > 40) mark("years_english");
+      if (!val("proficiency")) mark("proficiency");
+      if (!val("study_abroad")) mark("study_abroad");
+    }
+    const err = document.getElementById("about_err");
+    if (bad.length){
+      err.textContent = bad.indexOf("pid") >= 0 && bad.length === 1
+        ? "Your Participant ID needs 4 to 20 letters or numbers, with no spaces."
+        : (bad.indexOf("age") >= 0 && age && age < CONFIG.minAge ? "You need to be at least " + CONFIG.minAge + " to take part." : "Please complete the highlighted fields.");
+      const first = document.getElementById(bad[0]); if (first) first.focus();
+      return;
+    }
+    S.participant_id = pid;
+    const gc = val("gender");
+    S.demo = {
+      age: age, gender_choice: gc, gender_self: val("gender_self"),
+      gender: gc === "Prefer to self-describe" ? "Self-described: " + val("gender_self") : gc,
+      education: val("education"), first_languages: val("first_languages"), other_languages: val("other_languages")
+    };
+    if (S.group === "native"){
+      S.demo.country_choice = val("country"); S.demo.country_other = val("country_other");
+      S.demo.country = val("country") === "Other" ? val("country_other") : val("country");
+    } else {
+      Object.assign(S.demo, {years_english: val("years_english"), proficiency: val("proficiency"),
+        institution: val("institution"), class_group: val("class_group"),
+        study_abroad: val("study_abroad"), abroad_months: val("study_abroad") === "Yes" ? val("abroad_months") : ""});
+    }
+    go("sct_intro");
+  },
+
+  sct_start: () => { if (!S.times.sct_start) S.times.sct_start = nowIso(); go("sct_item", 0); },
+  sct_prev: () => { if (S.idx > 0) go("sct_item", S.idx - 1); },
+  sct_next: () => {
+    const it = SCT_ACTIVE[S.idx];
+    if (CONFIG.requireAllAnswers && !String(getResp(S, it.uid).value || "").trim()){
+      document.getElementById("sct_err").textContent = "Please complete the sentence before moving on.";
+      document.getElementById("cont").focus(); return;
+    }
+    if (S.idx < SCT_ACTIVE.length - 1) go("sct_item", S.idx + 1); else go("sct_review");
+  },
+  sct_edit: b => { S.fromReview = true; go("sct_item", +b.dataset.i); },
+  sct_back_review: () => {
+    const it = SCT_ACTIVE[S.idx];
+    if (CONFIG.requireAllAnswers && !String(getResp(S, it.uid).value || "").trim()){
+      document.getElementById("sct_err").textContent = "Please complete the sentence before returning to the review."; return;
+    }
+    S.fromReview = false; go("sct_review");
+  },
+  sct_submit: async () => {
+    const missing = SCT_ACTIVE.filter(it => !String(getResp(S, it.uid).value || "").trim());
+    if (CONFIG.requireAllAnswers && missing.length){
+      document.getElementById("rev_err").textContent = "Please answer every item before submitting (" + missing.length + " missing)."; return;
+    }
+    const ok = await confirmDialog("Submit Part 1?", "After submitting, you will not be able to change your answers in Part 1.", "Submit Part 1");
+    if (!ok) return;
+    S.submitted.SCT = true; S.times.sct_end = nowIso();
+    SCT_ACTIVE.forEach(it => enqueueItem(it.uid));
+    enqueueSession(); save(); flush();
+    go("sct_break");
+  },
+
+  gjt_start: () => { if (!S.times.gjt_start) S.times.gjt_start = nowIso(); go("gjt_item", 0); },
+  frame_start: () => { if (!S.times.frame_start) S.times.frame_start = nowIso(); go("frame_item", 0); },
+
+  rate: b => {
+    const task = S.screen === "frame_item" ? "FRAME" : "GJT";
+    const entry = RATE[task].seq[S.idx];
+    const v = +b.dataset.v;
+    setRating(entry.uid, v);
+    app.querySelectorAll(".scale button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.v === v)));
+    const e = document.getElementById("rate_err"); if (e) e.textContent = "";
+  },
+  rate_prev: () => { if (S.idx > 0) go(S.screen, S.idx - 1); },
+  rate_next: () => {
+    const task = S.screen === "frame_item" ? "FRAME" : "GJT", cfg = RATE[task];
+    const entry = cfg.seq[S.idx];
+    if (CONFIG.requireAllAnswers && getResp(S, entry.uid).value == null){
+      document.getElementById("rate_err").textContent = "Please choose a number from 1 to 6."; return;
+    }
+    if (S.idx < cfg.seq.length - 1) return go(cfg.screen, S.idx + 1);
+    if (cfg.review) return go(cfg.review);
+    S.submitted.FRAME = true; S.times.frame_end = nowIso();
+    go("finish"); runFinish();
+  },
+  gjt_review_rate: b => {
+    const uid = b.dataset.uid, v = +b.dataset.v;
+    setRating(uid, v);
+    b.parentNode.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.v === v)));
+    b.closest("li").classList.remove("missing");
+    enqueueItem(uid); save(); flush();
+  },
+  gjt_submit: async () => {
+    const missing = GJT_ACTIVE.filter(it => getResp(S, it.uid).value == null);
+    if (CONFIG.requireAllAnswers && missing.length){
+      document.getElementById("rev_err").textContent = "Please rate every sentence before submitting (" + missing.length + " missing)."; return;
+    }
+    const ok = await confirmDialog("Submit Part 2?", "After submitting, you will not be able to change your ratings in Part 2.", "Submit Part 2");
+    if (!ok) return;
+    S.submitted.GJT = true; S.times.gjt_end = nowIso();
+    GJT_ACTIVE.forEach(it => enqueueItem(it.uid));
+    save(); flush();
+    if (CONFIG.includeFrameControl) return go("frame_intro");
+    go("finish"); runFinish();
+  },
+
+  retry_save: () => { runFinish(); },
+  dl_csv: () => downloadCsv(S),
+  dl_json: () => downloadJson(S),
+
+  adm_sim: () => simulate(),
+  adm_clear: () => { clearStored(); document.getElementById("adm_msg").textContent = "Saved session cleared from this browser."; }
+};
+
+app.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]");
+  if (!b || b.disabled) return;
+  e.preventDefault();
+  const fn = ACTIONS[b.dataset.act];
+  if (fn) fn(b, e);
+});
+app.addEventListener("submit", e => { if (e.target.id === "about"){ e.preventDefault(); ACTIONS.about_submit(); } });
+
+document.addEventListener("keydown", e => {
+  if (!S) return;
+  if (e.key && e.key.length === 1 && e.key !== "Unidentified") S.keyboard_events_seen = true;
+  if ((S.screen === "gjt_item" || S.screen === "frame_item") && !e.altKey && !e.ctrlKey && !e.metaKey){
+    if (/^[1-6]$/.test(e.key)){ const b = app.querySelector('.scale button[data-v="' + e.key + '"]'); if (b) ACTIONS.rate(b); e.preventDefault(); }
+    else if (e.key === "Enter" && !(document.getElementById("dlg") || {}).open){ const b = document.getElementById("rate_next"); if (b){ e.preventDefault(); ACTIONS.rate_next(); } }
+  }
+});
+
+let hiddenAt = null;
+document.addEventListener("visibilitychange", () => {
+  if (!S) return;
+  if (document.hidden){
+    hiddenAt = perf();
+    if (inTask()){ S.tab.leaves++; const p = partOf(S.screen); S.tab.by_part[p] = (S.tab.by_part[p] || 0) + 1; }
+    save(); flush();
+  } else if (hiddenAt != null){
+    const d = perf() - hiddenAt;
+    if (inTask()) S.tab.away_ms += Math.round(d);
+    if (cur) cur.t0 += d;   // time on item counts only while the page is visible
+    hiddenAt = null; save();
+  }
+});
+window.addEventListener("beforeunload", e => {
+  if (!S) return;
+  if (cur){ const r = getResp(S, cur.uid); r.time_ms += Math.round(perf() - cur.t0); cur.t0 = perf(); }
+  save();
+  if (inTask() || (S.screen === "finish" && S.outbox.length)){ e.preventDefault(); e.returnValue = ""; }
+});
+
+/* ============================================================
+   Finish
+   ============================================================ */
+async function runFinish(){
+  finishState = "saving"; render();
+  if (!S.completed){ S.times.finish = nowIso(); S.completed = true; }
+  enqueueSession(); save();
+  if (!CONFIG.dataEndpoint){ finishState = "local"; render(); return; }
+  backoff = 1000; clearTimeout(retryTimer);
+  const ok = await waitForEmptyOutbox(30000);
+  finishState = ok ? "saved" : "failed";
+  render();
+  if (ok && CONFIG.completionUrl) setTimeout(() => { location.href = CONFIG.completionUrl; }, 5000);
+}
+
+/* ============================================================
+   Researcher mode (?admin=1)
+   ============================================================ */
+function selfCheck(){
+  const out = [];
+  const add = (label, pass, detail) => out.push({label:label, pass:!!pass, detail:detail || ""});
+  const count = (arr, f) => arr.filter(f).length;
+  add("Task order is SCT then GJT", PARTS[0] === "SCT" && PARTS[1] === "GJT", PARTS.join(" > "));
+  add("SCT has 26 items", SCT.length === 26, SCT.length);
+  add("GJT has 52 items", GJT.length === 52, GJT.length);
+  add("SCT pres numbers run 1–26 in order", SCT.every((it, i) => it.pres === i + 1));
+  add("GJT pres numbers run 1–52 in order", GJT.every((it, i) => it.pres === i + 1));
+  add("Participant sees SCT items in documented order", SCT_ACTIVE.every((it, i, a) => i === 0 || it.pres > a[i-1].pres));
+  add("Participant sees GJT items in documented order", GJT_SEQ.filter(s => s.kind === "item").every((s, i, a) => i === 0 || s.it.pres > a[i-1].it.pres));
+  add("Unique item IDs", new Set(SCT.map(x => x.id)).size === 26 && new Set(GJT.map(x => x.id)).size === 52);
+  add("GJT 26 Gram / 26 Ungram", count(GJT, g => g.type === "Gram") === 26);
+  add("GJT 26 animate / 26 inanimate", count(GJT, g => g.anim === "A") === 26);
+  const npahs = ["SU","DO","IO","OBL","GEN","OCOMP"];
+  const cellOk = npahs.every(n => { const per = n === "IO" ? 3 : 2; return ["Gram","Ungram"].every(t => ["A","I"].every(a => count(GJT, g => g.npah === n && g.type === t && g.anim === a) === per)); });
+  add("GJT NPAH × type × animacy cells (2 each, IO 3 each)", cellOk);
+  add("SCT per NPAH: 4 each, IO 6", npahs.every(n => count(SCT, s => s.npah === n) === (n === "IO" ? 6 : 4)));
+  add("SCT 13 animate / 13 inanimate", count(SCT, s => s.anim === "A") === 13);
+  const badMatch = SCT.filter(s => { const g = GJT_BY_ID[s.gram], u = GJT_BY_ID[s.ungram]; return !g || !u || g.type !== "Gram" || u.type !== "Ungram" || g.npah !== s.npah || u.npah !== s.npah || g.anim !== s.anim || u.anim !== s.anim; });
+  add("Every SCT item matches a Gram and an Ungram GJT item with the same NPAH and animacy", !badMatch.length, badMatch.map(s => "SCT " + s.id).join(", "));
+  add("Every GJT item belongs to exactly one minimal pair", GJT.every(g => PAIR_KEY[g.id]) && GJT_PAIRS.length === 26 && new Set(GJT_PAIRS.flat()).size === 52);
+  add("Draft items flagged: GJT 49–52, SCT 25–26", GJT.filter(g => g.draft).map(g => g.id).sort().join() === "49,50,51,52" && SCT.filter(s => s.draft).map(s => s.id).sort().join() === "25,26");
+  add("SCT targets begin with their prompt", SCT.every(s => s.target.indexOf(s.prompt) === 0), SCT.filter(s => s.target.indexOf(s.prompt) !== 0).map(s => "SCT " + s.id).join(", "));
+  add("Data endpoint set", !!CONFIG.dataEndpoint, CONFIG.dataEndpoint ? "" : "Empty: participants will be asked to download their answers.");
+  add("Placeholders replaced (token, salt, admin password, researcher name)", CONFIG.studyToken.indexOf("CHANGE-ME") < 0 && CONFIG.hashSalt.indexOf("CHANGE-ME") < 0 && CONFIG.adminPassword.indexOf("CHANGE-ME") < 0 && R.name.indexOf("[") < 0);
+  return out;
+}
+
+function renderAdmin(){
+  const checks = selfCheck();
+  const base = location.href.split("?")[0];
+  const links = CONFIG.groups.map(g => '<li><a href="' + esc(base + "?group=" + encodeURIComponent(g)) + '">' + esc(base + "?group=" + g) + '</a> · <a href="' + esc(base + "?group=" + encodeURIComponent(g) + "&test=1") + '">test run</a></li>').join("");
+  const sctRows = SCT.map(s => '<tr><td>' + s.pres + '</td><td>' + s.id + '</td><td>' + s.npah + '</td><td>' + s.anim + '</td><td>' + esc(s.vclass || "—") + '</td><td>' + esc(s.prompt) + '</td><td>' + esc(s.target) + '</td><td>' + s.gram + ' / ' + s.ungram + '</td><td>' + (s.draft ? "draft" : "") + '</td></tr>').join("");
+  const gjtRows = GJT_SEQ.map(e => e.kind === "catch"
+    ? '<tr><td>—</td><td>' + e.uid + '</td><td colspan="5">' + esc(e.text) + ' <em>(catch, expect ' + e.it.expect + ')</em></td><td></td></tr>'
+    : '<tr><td>' + e.it.pres + '</td><td>' + e.it.id + '</td><td>' + e.it.npah + '</td><td>' + e.it.type + '</td><td>' + e.it.anim + '</td><td>' + esc(e.it.err || "—") + '</td><td>' + esc(e.text) + '</td><td>' + (e.it.draft ? "draft" : "") + '</td></tr>').join("");
+  page('<h1>Researcher mode</h1>' +
+    '<h2>Study links</h2><ul class="guide">' + links + '</ul><p class="muted small">Test runs are marked is_test = true in the data.</p>' +
+    '<h2>Self-check</h2><div class="card scroll"><table class="t"><tr><th>Check</th><th>Result</th><th>Detail</th></tr>' +
+      checks.map(c => '<tr><td>' + esc(c.label) + '</td><td class="' + (c.pass ? "pass" : "fail") + '">' + (c.pass ? "Pass" : "Check") + '</td><td>' + esc(String(c.detail)) + '</td></tr>').join("") + '</table></div>' +
+    '<h2>Tools</h2><div class="actions" style="justify-content:flex-start"><button class="btn" data-act="adm_sim">Download a simulated participant</button><button class="btn ghost" data-act="adm_clear">Clear this browser\'s saved session</button></div><p class="muted small" id="adm_msg"></p>' +
+    '<details><summary>SCT items in presentation order</summary><div class="scroll"><table class="t"><tr><th>Pres</th><th>ID</th><th>NPAH</th><th>Anim</th><th>Verb class</th><th>Prompt</th><th>Target</th><th>GJT match</th><th></th></tr>' + sctRows + '</table></div></details>' +
+    '<details><summary>GJT sequence as participants see it</summary><div class="scroll"><table class="t"><tr><th>Pres</th><th>ID</th><th>NPAH</th><th>Type</th><th>Anim</th><th>Error</th><th>Sentence</th><th></th></tr>' + gjtRows + '</table></div></details>');
+}
+
+function simulate(){
+  const st = newState(CONFIG.groups[0], null, false);
+  st.is_test = true; st.participant_id = "SIMTEST" + Math.floor(Math.random() * 900 + 100);
+  st.demo = {age: 21, gender: "Prefer not to say", education: "Bachelor's student", first_languages: "Moroccan Arabic", other_languages: "French", years_english: "8", proficiency: "4", study_abroad: "No"};
+  const t = Date.now();
+  st.consent_at = new Date(t).toISOString(); st.times.sct_start = new Date(t + 60000).toISOString();
+  SCT_ACTIVE.forEach(it => {
+    const r = getResp(st, it.uid);
+    const cont = it.target.slice(it.prompt.length).trim();
+    r.value = Math.random() < 0.7 ? cont : cont.replace(/\b(whom|which|who)\b/, "and");
+    r.first_value = r.value; r.visits = 1; r.time_ms = 20000 + Math.round(Math.random() * 40000); r.first_resp_ms = 3000; r.keystrokes = r.value.length; r.last_ts = nowIso();
+  });
+  st.times.sct_end = new Date(t + 1400000).toISOString(); st.times.gjt_start = new Date(t + 1500000).toISOString();
+  GJT_SEQ.forEach(e => {
+    const r = getResp(st, e.uid);
+    r.value = 1 + Math.floor(Math.random() * 6); r.first_value = r.value; r.visits = 1; r.time_ms = 2500 + Math.round(Math.random() * 6000); r.first_resp_ms = 2000; r.last_ts = nowIso();
+  });
+  st.times.gjt_end = new Date(t + 2300000).toISOString(); st.times.finish = st.times.gjt_end; st.completed = true;
+  st.rows.SESSION = sessionRow(st);
+  downloadCsv(st); setTimeout(() => downloadJson(st), 400);
+  document.getElementById("adm_msg").textContent = "Simulated participant " + st.participant_id + " downloaded (CSV and JSON).";
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+function staticPage(title, body){
+  app.innerHTML = '<header class="top"><div class="top-inner"><span class="brand">English sentence study</span></div></header><main class="narrow"><h1>' + title + '</h1>' + body + '</main>';
+}
+
+async function boot(){
+  if (ADMIN){
+    S = newState("admin", null, false); S.screen = "admin_login"; render(); return;
+  }
+  let group = P.get("group");
+  if (!group && !CONFIG.requireGroupParam) group = CONFIG.defaultGroup;
+  if (!group || CONFIG.groups.indexOf(group) < 0){
+    staticPage("This link is not complete", "<p>Please use the exact link the researcher sent you. If the problem continues, contact " + esc(R.email) + ".</p>");
+    return;
+  }
+  const dev = deviceInfo();
+  if (dev.device_type === "phone" && CONFIG.devicePolicy === "block-phones"){
+    staticPage("Please switch to a computer", "<p>Part 1 of this study asks you to type sentences, so it needs a laptop or desktop computer with a keyboard.</p><p>Open the same link on a computer to take part. Thank you.</p>");
+    return;
+  }
+  const platformRaw = CONFIG.platformIdParam ? P.get(CONFIG.platformIdParam) : null;
+  const hash = platformRaw ? await sha256(CONFIG.hashSalt + "|" + platformRaw) : null;
+  const stored = loadStored();
+
+  if (stored && stored.v === 3 && stored.group === group){
+    if (stored.completed){
+      // A finished session on this browser: start fresh for the next person, carrying any unsent rows.
+      S = newState(group, hash, !!platformRaw);
+      S.outbox = stored.outbox || [];
+    } else if (stored.screen === "consent" || stored.screen === "declined"){
+      S = newState(group, hash, !!platformRaw);
+      S.outbox = stored.outbox || [];
+    } else {
+      S = stored;
+      S._resumeTo = stored.screen === "resume" ? (stored._resumeTo || "consent") : stored.screen;
+      S.screen = "resume";
+    }
+  } else {
+    S = newState(group, hash, !!platformRaw);
+    if (stored && stored.outbox && stored.outbox.length) S.outbox = stored.outbox;
+  }
+  if (TEST) S.is_test = true;
+  if (S.screen === "consent" && dev.device_type === "phone" && CONFIG.devicePolicy === "warn") S.screen = "device_warn";
+  save();
+  render();
+  flush();
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
