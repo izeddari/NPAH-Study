@@ -168,12 +168,18 @@ const CONFIG = {
   groups: ["EFL", "native"],
   requireGroupParam: true,
   defaultGroup: "EFL",            // used only if requireGroupParam is false
-  // Optional recruitment-platform ID in the link (e.g. ?prolific_id=...). Stored only as a salted hash.
-  platformIdParam: "prolific_id",
+  // Prolific: the participant ID in the link is stored only as a salted hash. The Prolific study and
+  // submission IDs are stored as they are, so you can match data to submissions in your Prolific export
+  // (Prolific's "Submission id" = SESSION_ID).
+  platformIdParam: "PROLIFIC_PID",
+  platformStudyParam: "STUDY_ID",
+  platformSessionParam: "SESSION_ID",
+  platformName: "Prolific",
   hashSalt: "salt-9rrbZ5MXys8G1bykOR3FxEzU",
-  // Optional: redirect after a confirmed save (e.g. a Prolific completion URL). Empty = no redirect.
-  completionUrl: "",
+  // Prolific completion: paste the code from Prolific ("Completion paths" / completion code).
+  // The completion URL is built from it automatically. Leave empty when not using Prolific.
   completionCode: "",
+  completionUrl: "",   // optional override; default = https://app.prolific.com/submissions/complete?cc=<completionCode>
   // "block-phones" | "warn" | "allow"
   devicePolicy: "block-phones",
   includeDraftItems: true,        // GJT IDs 49-52, SCT IDs 25-26
@@ -194,7 +200,7 @@ const CONFIG = {
   // Researcher mode: open index.html?admin=1. This is a convenience lock, not real security.
   adminPassword: "admin",
   researcher: {
-    name: "[Ikbal Zeddari]",
+    name: "[Ikbal zeddari]",
     institution: "Mohammed V University in Rabat",
     email: "i.zeddari@um5r.ac.ma"
   }
@@ -345,7 +351,12 @@ const RATE = {
    Utilities
    ============================================================ */
 const app = document.getElementById("app");
-const P = new URLSearchParams(location.search);
+// Tolerates links like ?group=EFL?PROLIFIC_PID=... (a second "?" is read as "&").
+const P = new URLSearchParams(location.search.replace(/^\?/, "").replace(/\?/g, "&"));
+// Only participants who arrived from Prolific (their link contains PROLIFIC_PID) see the completion code
+// and are sent back to Prolific. Participants recruited directly (e.g. ?group=EFL) never see it.
+const FROM_PLATFORM = !!(CONFIG.platformIdParam && P.get(CONFIG.platformIdParam));
+const COMPLETION_URL = !FROM_PLATFORM ? "" : (CONFIG.completionUrl || (CONFIG.completionCode ? "https://app.prolific.com/submissions/complete?cc=" + encodeURIComponent(CONFIG.completionCode) : ""));
 const ADMIN = P.get("admin") === "1";
 const TEST = P.get("test") === "1";
 const STORE_KEY = CONFIG.studyId + ":" + CONFIG.instrumentVersion + ":session";
@@ -397,6 +408,8 @@ function newState(group, hash, platformPresent){
   return {
     v: 3, session_id: uuid(), created_at: nowIso(), group: group,
     platform_id_hash: hash, platform_id_present: !!platformPresent,
+    platform_study_id: (CONFIG.platformStudyParam && P.get(CONFIG.platformStudyParam)) || "",
+    platform_session_id: (CONFIG.platformSessionParam && P.get(CONFIG.platformSessionParam)) || "",
     is_test: TEST, screen: "consent", idx: 0, fromReview: false,
     participant_id: "", demo: {}, consent_at: null,
     resp: {}, submitted: {SCT:false, GJT:false, FRAME:false},
@@ -454,6 +467,7 @@ function baseRow(st){
     study_id: CONFIG.studyId, instrument_version: CONFIG.instrumentVersion,
     session_id: st.session_id, participant_id: st.participant_id, group: st.group,
     platform_id_hash: st.platform_id_hash || "", is_test: !!st.is_test,
+    prolific_study_id: st.platform_study_id || "", prolific_submission_id: st.platform_session_id || "",
     include_draft_items: CONFIG.includeDraftItems, include_catch_items: CONFIG.includeCatchItems,
     device_type: st.device.device_type, pointer: st.device.pointer,
     screen_w: st.device.screen_w, screen_h: st.device.screen_h,
@@ -845,7 +859,8 @@ const SCREENS = {
   },
 
   declined(){
-    page('<h1>Thank you for your time</h1><p>You chose not to take part. Nothing has been recorded, and you can close this page.</p>', true);
+    page('<h1>Thank you for your time</h1><p>You chose not to take part. Nothing has been recorded.</p>' +
+      (FROM_PLATFORM ? '<p>Please go back to ' + esc(CONFIG.platformName) + ' and click <strong>Return submission</strong> (or "Stop without completing"), so that this study does not count against you.</p>' : '<p>You can close this page.</p>'), true);
   },
 
   about(){
@@ -1010,18 +1025,18 @@ const SCREENS = {
     } else if (finishState === "saved"){
       body = '<h1>Thank you. Your responses have been saved.</h1>' +
         '<p>Your Participant ID is <strong>' + esc(S.participant_id) + '</strong>. Keep it if you might want your data deleted later.</p>' +
-        (CONFIG.completionCode ? '<p>Your completion code is <strong>' + esc(CONFIG.completionCode) + '</strong>.</p>' : '') +
-        (CONFIG.completionUrl ? '<p class="muted">You will be redirected in 5 seconds.</p>' : '<p>You can now close this page.</p>') +
+        (COMPLETION_URL ? completionBlock(true) : '<p>You can now close this page.</p>') +
         (CONFIG.alwaysOfferDownload ? dlButtons() : '');
     } else if (finishState === "local"){
       body = '<h1>Thank you. You have finished.</h1>' +
         '<p>Your Participant ID is <strong>' + esc(S.participant_id) + '</strong>.</p>' +
-        '<div class="warnbox">Online saving is not set up for this copy of the study. Please download your answers and send both files to the researcher at <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>.</div>' + dlButtons();
+        '<div class="warnbox">Online saving is not set up for this copy of the study. Please download your answers and send both files to the researcher at <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>.</div>' + dlButtons() + (COMPLETION_URL ? completionBlock(false) : '');
     } else {
       body = '<h1>Your answers are not saved online yet</h1>' +
         '<p>The connection to the data server did not work. Your answers are kept in this browser and will be sent automatically when the connection returns.</p>' +
         '<div class="warnbox">To be safe, please download your answers and email both files to <a href="mailto:' + esc(R.email) + '">' + esc(R.email) + '</a>, with your Participant ID <strong>' + esc(S.participant_id) + '</strong>.</div>' +
-        dlButtons() + '<div class="actions end"><button class="btn ghost" data-act="retry_save">Try saving again</button></div>';
+        dlButtons() + '<div class="actions end"><button class="btn ghost" data-act="retry_save">Try saving again</button></div>' +
+        (COMPLETION_URL ? completionBlock(false) : '');
     }
     page(body, true);
   },
@@ -1038,6 +1053,13 @@ const SCREENS = {
 
   admin(){ renderAdmin(); }
 };
+
+// Completion code and link back to Prolific, shown on every end screen so participants can always get credit.
+function completionBlock(autoRedirect){
+  return '<div class="note"><p>Your ' + esc(CONFIG.platformName) + ' completion code is <strong>' + esc(CONFIG.completionCode || "—") + '</strong>.</p>' +
+    (autoRedirect ? '<p class="small">You will be taken back to ' + esc(CONFIG.platformName) + ' automatically in 5 seconds. If nothing happens, use the button below.</p>' : '') +
+    '<div class="actions" style="justify-content:flex-start;margin-top:8px"><a class="btn" href="' + esc(COMPLETION_URL) + '">Complete on ' + esc(CONFIG.platformName) + '</a></div></div>';
+}
 
 function dlButtons(){
   return '<div class="actions" style="justify-content:flex-start"><button class="btn" data-act="dl_csv">Download answers (CSV)</button><button class="btn ghost" data-act="dl_json">Download full record (JSON)</button></div>';
@@ -1269,7 +1291,7 @@ async function runFinish(){
   finishing = false;
   finishState = ok ? "saved" : "failed";
   render();
-  if (ok && CONFIG.completionUrl) setTimeout(() => { location.href = CONFIG.completionUrl; }, 5000);
+  if (ok && COMPLETION_URL) setTimeout(() => { location.href = COMPLETION_URL; }, 5000);
 }
 
 /* ============================================================
@@ -1307,6 +1329,7 @@ function selfCheck(){
 function renderAdmin(){
   const checks = selfCheck();
   const base = location.href.split("?")[0];
+  const prolificTpl = base + "?group=GROUP&PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}";
   const links = CONFIG.groups.map(g => '<li><a href="' + esc(base + "?group=" + encodeURIComponent(g)) + '">' + esc(base + "?group=" + g) + '</a> · <a href="' + esc(base + "?group=" + encodeURIComponent(g) + "&test=1") + '">test run</a></li>').join("");
   const sctRows = SCT.map(s => '<tr><td>' + s.pres + '</td><td>' + s.id + '</td><td>' + s.npah + '</td><td>' + s.anim + '</td><td>' + esc(s.vclass || "—") + '</td><td>' + esc(s.prompt) + '</td><td>' + esc(s.target) + '</td><td>' + s.gram + ' / ' + s.ungram + '</td><td>' + (s.draft ? "draft" : "") + '</td></tr>').join("");
   const gjtRows = GJT_SEQ.map(e => e.kind === "catch"
@@ -1314,6 +1337,8 @@ function renderAdmin(){
     : '<tr><td>' + e.it.pres + '</td><td>' + e.it.id + '</td><td>' + e.it.npah + '</td><td>' + e.it.type + '</td><td>' + e.it.anim + '</td><td>' + esc(e.it.err || "—") + '</td><td>' + esc(e.text) + '</td><td>' + (e.it.draft ? "draft" : "") + '</td></tr>').join("");
   page('<h1>Researcher mode</h1>' +
     '<h2>Study links</h2><ul class="guide">' + links + '</ul><p class="muted small">Test runs are marked is_test = true in the data.</p>' +
+    '<p class="small">Prolific study link (native speakers):<br><code style="word-break:break-all">' + esc(prolificTpl.replace("GROUP","native")) + '</code></p>' +
+    '<p class="small">Prolific completion code: <strong>' + esc(CONFIG.completionCode || "not set") + '</strong></p>' +
     '<h2>Self-check</h2><div class="card scroll"><table class="t"><tr><th>Check</th><th>Result</th><th>Detail</th></tr>' +
       checks.map(c => '<tr><td>' + esc(c.label) + '</td><td class="' + (c.pass ? "pass" : "fail") + '">' + (c.pass ? "Pass" : "Check") + '</td><td>' + esc(String(c.detail)) + '</td></tr>').join("") + '</table></div>' +
     '<h2>Tools</h2><div class="actions" style="justify-content:flex-start"><button class="btn" data-act="adm_sim">Download a simulated participant</button><button class="btn ghost" data-act="adm_clear">Clear this browser\'s saved session</button></div><p class="muted small" id="adm_msg"></p>' +
@@ -1363,7 +1388,8 @@ async function boot(){
   }
   const dev = deviceInfo();
   if (dev.device_type === "phone" && CONFIG.devicePolicy === "block-phones"){
-    staticPage("Please switch to a computer", "<p>Part 1 of this study asks you to type sentences, so it needs a laptop or desktop computer with a keyboard.</p><p>Open the same link on a computer to take part. Thank you.</p>");
+    staticPage("Please switch to a computer", "<p>Part 1 of this study asks you to type sentences, so it needs a laptop or desktop computer with a keyboard.</p><p>Open the same link on a computer to take part. Thank you.</p>" +
+      (FROM_PLATFORM ? "<p>If you cannot use a computer, please go back to " + esc(CONFIG.platformName) + " and click <strong>Return submission</strong>.</p>" : ""));
     return;
   }
   const platformRaw = CONFIG.platformIdParam ? P.get(CONFIG.platformIdParam) : null;
