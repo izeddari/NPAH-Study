@@ -183,7 +183,9 @@ const CONFIG = {
   // "block-phones" | "warn" | "allow"
   devicePolicy: "block-phones",
   includeDraftItems: true,        // GJT IDs 49-52, SCT IDs 25-26
-  includeCatchItems: true,        // 2 attention items inserted after GJT pres 17 and pres 35
+  includeCatchItems: true,        // 2 catch sentences inserted after GJT pres 17 and pres 35 (for exclusion, not rejection)
+  includeAttentionCheck: true,    // 1 instructed attention check after GJT pres 44 ("Please select 2"); valid basis for Prolific rejection
+  insertFlagChars: 10,            // SCT: flag an answer if this many characters or more appeared in one single change
   includeFrameControl: false,     // optional verb-frame block after the GJT (placeholder items)
   requireAllAnswers: true,
   // Answers are sent in bundles: at most one request per participant every saveIntervalMs,
@@ -200,7 +202,7 @@ const CONFIG = {
   // Researcher mode: open index.html?admin=1. This is a convenience lock, not real security.
   adminPassword: "admin",
   researcher: {
-    name: "[Ikbal zeddari]",
+    name: "Ikbal Zeddari",
     institution: "Mohammed V University in Rabat",
     email: "i.zeddari@um5r.ac.ma"
   }
@@ -300,9 +302,13 @@ const GJT_PAIRS = [[8,44],[39,21],[22,28],[9,45],[1,13],[47,5],[30,24],[40,16],[
 
 // Attention items: inserted AFTER these GJT presentation numbers; real items are never renumbered.
 const CATCH_ITEMS = [
-  {uid:"CATCH-C1", afterPres:17, text:"My brother lives in Rabat with his family.", expect:"high"},
-  {uid:"CATCH-C2", afterPres:35, text:"Book the table on quickly green was.", expect:"low"}
+  {uid:"CATCH-C1", afterPres:17, kind:"catch", text:"My brother lives in Rabat with his family.", expect:"high"},
+  {uid:"CATCH-C2", afterPres:35, kind:"catch", text:"Book the table on quickly green was.", expect:"low"},
+  // Instructed attention check (Prolific-compliant: a clear instruction, not a memory or trick question).
+  {uid:"CATCH-ATTN1", afterPres:44, kind:"attention", text:"This is an attention check. Please select 2 (Incorrect) for this sentence.", expect:"exact", value:2}
 ];
+const catchOn = c => c.kind === "attention" ? CONFIG.includeAttentionCheck : CONFIG.includeCatchItems;
+const catchPass = (c, v) => v == null ? "" : (c.expect === "exact" ? v === c.value : (c.expect === "high" ? v >= 4 : v <= 3));
 
 // Optional verb-frame control block. PLACEHOLDERS: replace with normed items before use.
 const FRAME_ITEMS = [
@@ -337,7 +343,7 @@ const GJT_ACTIVE = GJT.filter(i => CONFIG.includeDraftItems || !i.draft);
 const GJT_SEQ = [];
 GJT_ACTIVE.forEach(it => {
   GJT_SEQ.push({uid:it.uid, kind:"item", text:it.text, it:it});
-  if (CONFIG.includeCatchItems) CATCH_ITEMS.filter(c => c.afterPres === it.pres).forEach(c => GJT_SEQ.push({uid:c.uid, kind:"catch", text:c.text, it:c}));
+  CATCH_ITEMS.filter(c => c.afterPres === it.pres && catchOn(c)).forEach(c => GJT_SEQ.push({uid:c.uid, kind:"catch", text:c.text, it:c}));
 });
 const FRAME_SEQ = FRAME_ITEMS.map(f => ({uid:"FRAME-"+f.id, kind:"frame", text:f.text, it:f}));
 
@@ -428,7 +434,7 @@ function partOf(screen){
 function inTask(){ return S && partOf(S.screen) && !S.completed; }
 
 function getResp(st, uid){
-  if (!st.resp[uid]) st.resp[uid] = {value:null, first_value:null, first_resp_ms:null, time_ms:0, visits:0, changes:0, keystrokes:0, last_ts:null};
+  if (!st.resp[uid]) st.resp[uid] = {value:null, first_value:null, first_resp_ms:null, time_ms:0, visits:0, changes:0, keystrokes:0, last_ts:null, max_insert:0, non_typed:0, non_typed_types:"", silent_changes:0};
   return st.resp[uid];
 }
 
@@ -517,7 +523,10 @@ function itemRow(st, uid){
       gjt_gram_match: it.gram, gjt_ungram_match: it.ungram,
       prefix: it.prompt, continuation: cont, full_sentence: cont ? it.prompt + " " + cont : "",
       first_response: first ? it.prompt + " " + first : "",
-      n_keystrokes: r.keystrokes
+      n_keystrokes: r.keystrokes,
+      max_chars_single_change: r.max_insert || 0, non_typed_inputs: r.non_typed || 0,
+      non_typed_input_types: r.non_typed_types || "", silent_changes: r.silent_changes || 0,
+      flag_inserted_text: (r.max_insert || 0) >= CONFIG.insertFlagChars || (r.non_typed || 0) > 0 || (r.silent_changes || 0) > 0
     }, common, sctFlags(it.prompt, cont), {
       score:"", error_code:"", variant:"", register_flag:"", frame_deviation:"", rater_id:"", rater_note:""
     });
@@ -539,10 +548,10 @@ function itemRow(st, uid){
   if (uid.indexOf("CATCH-") === 0){
     const c = CATCH_ITEMS.find(x => x.uid === uid);
     const rating = r.value;
-    const pass = rating == null ? "" : (c.expect === "high" ? rating >= 4 : rating <= 3);
+    const pass = catchPass(c, rating);
     return Object.assign(baseRow(st), {
-      sheet:"gjt", task:"GJT", item_type:"catch", item_id: c.uid, presentation_position: "",
-      inserted_after_pres: c.afterPres, sentence: c.text, catch_expect: c.expect,
+      sheet:"gjt", task:"GJT", item_type: c.kind === "attention" ? "attention_check" : "catch", item_id: c.uid, presentation_position: "",
+      inserted_after_pres: c.afterPres, sentence: c.text, catch_expect: c.expect === "exact" ? "select " + c.value : c.expect,
       rating: rating == null ? "" : rating, first_rating: r.first_value == null ? "" : r.first_value,
       catch_pass: pass
     }, common);
@@ -568,19 +577,26 @@ function computeFlags(st){
   const tooFast = GJT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return r && r.value != null && r.time_ms < CONFIG.minGjtMs; }).length;
   const sctShort = SCT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return !r || words(r.value) < CONFIG.minSctWords; }).length;
   let catchFail = 0, catchN = 0;
-  if (CONFIG.includeCatchItems) CATCH_ITEMS.forEach(c => { const r = st.resp[c.uid]; if (r && r.value != null){ catchN++; const pass = c.expect === "high" ? r.value >= 4 : r.value <= 3; if (!pass) catchFail++; } });
+  CATCH_ITEMS.filter(c => c.kind === "catch" && catchOn(c)).forEach(c => { const r = st.resp[c.uid]; if (r && r.value != null){ catchN++; if (!catchPass(c, r.value)) catchFail++; } });
+  const attn = CATCH_ITEMS.find(c => c.kind === "attention");
+  const attnR = attn && catchOn(attn) ? st.resp[attn.uid] : null;
+  const attnPass = attnR && attnR.value != null ? catchPass(attn, attnR.value) : "";
+  const inserted = SCT_ACTIVE.filter(it => { const r = st.resp[it.uid]; return r && ((r.max_insert || 0) >= CONFIG.insertFlagChars || (r.non_typed || 0) > 0 || (r.silent_changes || 0) > 0); }).length;
   const t0 = st.times.sct_start ? Date.parse(st.times.sct_start) : null;
   const t1 = st.times.finish ? Date.parse(st.times.finish) : (st.times.gjt_end ? Date.parse(st.times.gjt_end) : null);
   const totalMin = (t0 && t1) ? Math.round((t1 - t0) / 6000) / 10 : "";
   const flags = {
     flag_catch_fail: catchFail > 0, catch_answered: catchN, catch_failed: catchFail,
+    attention_check_rating: attnR && attnR.value != null ? attnR.value : "", attention_check_passed: attnPass,
+    flag_attention_fail: attnPass === false,
+    sct_inserted_text_items: inserted, flag_inserted_text: inserted > 0,
     straight_line_max_run: maxRun, flag_straight_line: maxRun >= CONFIG.straightLineRun,
     gjt_too_fast_count: tooFast, sct_short_answer_count: sctShort,
     total_minutes: totalMin, flag_too_short_total: totalMin !== "" && totalMin < CONFIG.minTotalMinutes,
     tab_leaves: st.tab.leaves, tab_away_ms: st.tab.away_ms,
     tab_leaves_sct: (st.tab.by_part.SCT || 0), tab_leaves_gjt: (st.tab.by_part.GJT || 0)
   };
-  flags.flag_any = !!(flags.flag_catch_fail || flags.flag_straight_line || flags.flag_too_short_total || tooFast >= 10 || sctShort >= 5);
+  flags.flag_any = !!(flags.flag_attention_fail || flags.flag_inserted_text || flags.flag_catch_fail || flags.flag_straight_line || flags.flag_too_short_total || tooFast >= 10 || sctShort >= 5);
   return flags;
 }
 
@@ -778,7 +794,22 @@ function confirmDialog(title, body, okLabel){
 /* ============================================================
    Navigation and rendering
    ============================================================ */
+// Text put into the box by a script or extension fires no input event. Pick it up before leaving the item.
+function syncSctBox(){
+  if (!S || S.screen !== "sct_item") return;
+  const ta = document.getElementById("cont"); if (!ta) return;
+  const r = getResp(S, SCT_ACTIVE[S.idx].uid);
+  if (ta.value !== (r.value || "")){
+    const added = ta.value.length - (r.value || "").length;
+    r.silent_changes = (r.silent_changes || 0) + 1;
+    if (added > (r.max_insert || 0)) r.max_insert = added;
+    r.value = ta.value;
+    markFirstResponse(SCT_ACTIVE[S.idx].uid);
+  }
+}
+
 function go(screen, idx){
+  syncSctBox();
   leaveItem();
   const prevScreen = S.screen;
   S.screen = screen;
@@ -941,7 +972,20 @@ const SCREENS = {
     indent(); window.onresize = indent;
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(indent);
     let saveTimer = null;
-    ta.addEventListener("input", () => {
+    ta.addEventListener("beforeinput", e => {
+      // Typing (insertText / composition) and deleting are normal. Anything else that inserts text
+      // (autofill, dictation, extensions, replacement) is recorded as a non-typed input.
+      const t = e.inputType || "";
+      if (/^insert/.test(t) && !/^(insertText|insertCompositionText|insertLineBreak|insertParagraph)$/.test(t)){
+        r.non_typed = (r.non_typed || 0) + 1;
+        const types = (r.non_typed_types || "").split(" ").filter(Boolean);
+        if (types.indexOf(t) < 0){ types.push(t); r.non_typed_types = types.join(" "); }
+      }
+    });
+    ta.addEventListener("input", e => {
+      const t = e.inputType || "";
+      const added = ta.value.length - (r.value || "").length;
+      if (!/^history/.test(t) && added > (r.max_insert || 0)) r.max_insert = added;   // undo/redo is ignored
       r.value = ta.value; r.keystrokes++;
       markFirstResponse(it.uid);
       document.getElementById("sct_err").textContent = "";
@@ -1158,6 +1202,7 @@ const ACTIONS = {
   sct_start: () => { if (!S.times.sct_start) S.times.sct_start = nowIso(); go("sct_item", 0); },
   sct_prev: () => { if (S.idx > 0) go("sct_item", S.idx - 1); },
   sct_next: () => {
+    syncSctBox();
     const it = SCT_ACTIVE[S.idx];
     if (CONFIG.requireAllAnswers && !String(getResp(S, it.uid).value || "").trim()){
       document.getElementById("sct_err").textContent = "Please complete the sentence before moving on.";
@@ -1167,6 +1212,7 @@ const ACTIONS = {
   },
   sct_edit: b => { S.fromReview = true; go("sct_item", +b.dataset.i); },
   sct_back_review: () => {
+    syncSctBox();
     const it = SCT_ACTIVE[S.idx];
     if (CONFIG.requireAllAnswers && !String(getResp(S, it.uid).value || "").trim()){
       document.getElementById("sct_err").textContent = "Please complete the sentence before returning to the review."; return;
@@ -1333,7 +1379,7 @@ function renderAdmin(){
   const links = CONFIG.groups.map(g => '<li><a href="' + esc(base + "?group=" + encodeURIComponent(g)) + '">' + esc(base + "?group=" + g) + '</a> · <a href="' + esc(base + "?group=" + encodeURIComponent(g) + "&test=1") + '">test run</a></li>').join("");
   const sctRows = SCT.map(s => '<tr><td>' + s.pres + '</td><td>' + s.id + '</td><td>' + s.npah + '</td><td>' + s.anim + '</td><td>' + esc(s.vclass || "—") + '</td><td>' + esc(s.prompt) + '</td><td>' + esc(s.target) + '</td><td>' + s.gram + ' / ' + s.ungram + '</td><td>' + (s.draft ? "draft" : "") + '</td></tr>').join("");
   const gjtRows = GJT_SEQ.map(e => e.kind === "catch"
-    ? '<tr><td>—</td><td>' + e.uid + '</td><td colspan="5">' + esc(e.text) + ' <em>(catch, expect ' + e.it.expect + ')</em></td><td></td></tr>'
+    ? '<tr><td>—</td><td>' + e.uid + '</td><td colspan="5">' + esc(e.text) + ' <em>(' + (e.it.kind === "attention" ? "instructed attention check: correct answer " + e.it.value : "catch, expect " + e.it.expect) + ')</em></td><td></td></tr>'
     : '<tr><td>' + e.it.pres + '</td><td>' + e.it.id + '</td><td>' + e.it.npah + '</td><td>' + e.it.type + '</td><td>' + e.it.anim + '</td><td>' + esc(e.it.err || "—") + '</td><td>' + esc(e.text) + '</td><td>' + (e.it.draft ? "draft" : "") + '</td></tr>').join("");
   page('<h1>Researcher mode</h1>' +
     '<h2>Study links</h2><ul class="guide">' + links + '</ul><p class="muted small">Test runs are marked is_test = true in the data.</p>' +
