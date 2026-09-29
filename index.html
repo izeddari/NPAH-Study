@@ -163,14 +163,14 @@ const CONFIG = {
   // Google Apps Script web-app URL (ends in /exec). Leave empty to test without saving online.
   dataEndpoint: "https://script.google.com/macros/s/AKfycbzCj63O765B67J_3xcwzSxcjIQVzaEaemEmWMLJ5YfGlJHy-GHjLx1T_Mbw3oQdn8Cv/exec",
   // Must match TOKEN in Code.gs.
- studyToken: "npah-GCR25wnUKRbQ6vlMm7dzwlMM",
+  studyToken: "npah-GCR25wnUKRbQ6vlMm7dzwlMM",
   // Valid values for ?group= in the study link.
   groups: ["EFL", "native"],
   requireGroupParam: true,
   defaultGroup: "EFL",            // used only if requireGroupParam is false
   // Optional recruitment-platform ID in the link (e.g. ?prolific_id=...). Stored only as a salted hash.
   platformIdParam: "prolific_id",
- hashSalt: "salt-9rrbZ5MXys8G1bykOR3FxEzU",
+  hashSalt: "salt-9rrbZ5MXys8G1bykOR3FxEzU",
   // Optional: redirect after a confirmed save (e.g. a Prolific completion URL). Empty = no redirect.
   completionUrl: "",
   completionCode: "",
@@ -180,6 +180,9 @@ const CONFIG = {
   includeCatchItems: true,        // 2 attention items inserted after GJT pres 17 and pres 35
   includeFrameControl: false,     // optional verb-frame block after the GJT (placeholder items)
   requireAllAnswers: true,
+  // Answers are sent in bundles: at most one request per participant every saveIntervalMs,
+  // plus immediately at the end of each part. Keeps the Google Sheet responsive with many people at once.
+  saveIntervalMs: 20000,
   alwaysOfferDownload: false,     // true = show CSV/JSON download on the final screen even after a successful save
   // Data-quality flags (never shown to participants)
   minGjtMs: 1200,
@@ -189,9 +192,9 @@ const CONFIG = {
   minAge: 18,
   durationText: "about 35 to 45 minutes",
   // Researcher mode: open index.html?admin=1. This is a convenience lock, not real security.
- adminPassword: "choose-a-password",
+  adminPassword: "CHANGE-ME-ADMIN",
   researcher: {
-    name: "[Ikbal Zeddari]",
+    name: "[Researcher name]",
     institution: "Mohammed V University in Rabat",
     email: "i.zeddari@um5r.ac.ma"
   }
@@ -439,7 +442,7 @@ function leaveItem(){
   cur = null;
   enqueueItem(uid);
   save();
-  flush();
+  requestFlush();
 }
 
 /* ============================================================
@@ -600,29 +603,99 @@ function enqueueSession(){ stampAndQueue(S, sessionRow(S)); }
 /* ============================================================
    Saving: incremental, confirmed, with retry
    ============================================================ */
-let sending = false, backoff = 2000, retryTimer = null;
+let sending = false, backoff = 3000, retryTimer = null, flushTimer = null, lastFlushAt = 0, finishing = false;
+const jitter = ms => ms + Math.round(Math.random() * ms * 0.5);
+
+// Throttled save: bundles answers so each participant sends at most one request per saveIntervalMs.
+function requestFlush(){
+  if (!CONFIG.dataEndpoint || !S || !S.outbox.length || flushTimer || retryTimer) return;
+  const wait = Math.max(0, lastFlushAt + CONFIG.saveIntervalMs - Date.now());
+  flushTimer = setTimeout(() => { flushTimer = null; flush(); }, wait + Math.round(Math.random() * 2000));
+}
+
+// Immediate save (end of a part, leaving the page, finishing).
+// How saving works:
+// 1. The page first sends answers normally and reads Google's reply ("ok").
+// 2. Some Google accounts (e.g. university accounts) return a reply the browser is not allowed to read,
+//    even though the answers WERE saved. When that happens, the page switches to "confirm mode":
+//    it sends answers without reading the reply, then asks the receiver which answers it has
+//    (a small request the browser always allows) and removes those from its queue.
+//    The switch is remembered in this browser so later participants go straight to confirm mode.
+const MODE_KEY = CONFIG.studyId + ":confirm-mode";
+function confirmMode(){ try { return localStorage.getItem(MODE_KEY) === "1"; } catch(e){ return false; } }
+function setConfirmMode(){ try { localStorage.setItem(MODE_KEY, "1"); } catch(e){} }
+
+// Asks the receiver which rows it has for one session; answers via a <script> tag (never blocked by the browser).
+function askReceived(sessionId){
+  return new Promise((resolve, reject) => {
+    const cb = "__rcConfirm_" + Date.now() + "_" + Math.floor(Math.random() * 1e6);
+    const s = document.createElement("script");
+    let done = false;
+    const finish = (fn, v) => { if (done) return; done = true; clearTimeout(t); window[cb] = function(){}; s.remove(); fn(v); };
+    window[cb] = data => finish(resolve, data);
+    s.onerror = () => finish(reject, new Error("confirm_unreachable"));
+    const t = setTimeout(() => finish(reject, new Error("confirm_timeout")), 25000);
+    s.src = CONFIG.dataEndpoint + (CONFIG.dataEndpoint.indexOf("?") < 0 ? "?" : "&") +
+      "action=confirm&sid=" + encodeURIComponent(sessionId) + "&token=" + encodeURIComponent(CONFIG.studyToken) +
+      "&callback=" + cb + "&_=" + Date.now();
+    document.head.appendChild(s);
+  });
+}
+// Removes every queued row the receiver already has (same or newer version). Returns how many were removed.
+async function dropConfirmed(batch){
+  const sids = Array.from(new Set(batch.map(r => r.session_id)));
+  let removed = 0;
+  for (const sid of sids){
+    const j = await askReceived(sid);
+    if (!j || !j.ok) throw new Error((j && j.error) || "confirm_rejected");
+    const have = j.versions || {};
+    const before = S.outbox.length;
+    S.outbox = S.outbox.filter(r => !(r.session_id === sid && have[r.item_uid] != null && Number(have[r.item_uid]) >= r.row_version));
+    removed += before - S.outbox.length;
+  }
+  return removed;
+}
+
+// Immediate save (end of a part, leaving the page, finishing).
 async function flush(){
   if (!CONFIG.dataEndpoint || !S || !S.outbox.length || sending) return;
+  clearTimeout(flushTimer); flushTimer = null;
+  clearTimeout(retryTimer); retryTimer = null;
   sending = true;
-  const batch = S.outbox.slice(0, 40);
+  lastFlushAt = Date.now();
+  const batch = S.outbox.slice(0, 100);
+  const body = JSON.stringify({token: CONFIG.studyToken, rows: batch});
   try {
-    const res = await fetch(CONFIG.dataEndpoint, {
-      method: "POST",
-      headers: {"Content-Type": "text/plain;charset=utf-8"},
-      body: JSON.stringify({token: CONFIG.studyToken, rows: batch})
-    });
-    const j = await res.json();
-    if (!j || !j.ok) throw new Error((j && j.error) || "save_rejected");
-    S.outbox = S.outbox.filter(r => !batch.some(b => b.session_id === r.session_id && b.item_uid === r.item_uid && b.row_version === r.row_version));
-    backoff = 2000;
+    if (!confirmMode()){
+      let j;
+      try {
+        const res = await fetch(CONFIG.dataEndpoint, {method: "POST", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: body});
+        j = await res.json();
+      } catch(readErr){
+        // Reply could not be read. The answers may well have been saved: switch to confirm mode and check.
+        setConfirmMode();
+        await dropConfirmed(batch);
+        if (S.outbox.length){ save(); sending = false; setTimeout(flush, 300); return; }
+        j = {ok: true};
+      }
+      if (!j || !j.ok) throw new Error((j && j.error) || "save_rejected");
+      S.outbox = S.outbox.filter(r => !batch.some(b => b.session_id === r.session_id && b.item_uid === r.item_uid && b.row_version === r.row_version));
+    } else {
+      // Confirm mode: send without reading the reply, then ask which answers arrived.
+      await fetch(CONFIG.dataEndpoint, {method: "POST", mode: "no-cors", headers: {"Content-Type": "text/plain;charset=utf-8"}, body: body});
+      const removed = await dropConfirmed(batch);
+      if (!removed) throw new Error("not_confirmed_yet");
+    }
+    backoff = 3000;
     save();
     sending = false;
-    if (S.outbox.length) setTimeout(flush, 50);
+    if (S.outbox.length) setTimeout(flush, 300);
   } catch(e){
+    // Server busy or offline: retry later with growing, randomized waits so many browsers don't retry in step.
+    save();
     sending = false;
-    clearTimeout(retryTimer);
-    retryTimer = setTimeout(flush, backoff);
-    backoff = Math.min(backoff * 2, 60000);
+    retryTimer = setTimeout(() => { retryTimer = null; flush(); }, jitter(backoff));
+    backoff = Math.min(backoff * 2, finishing ? 8000 : 60000);
   }
 }
 function waitForEmptyOutbox(timeoutMs){
@@ -631,13 +704,12 @@ function waitForEmptyOutbox(timeoutMs){
     (function poll(){
       if (!S.outbox.length) return resolve(true);
       if (Date.now() - t0 > timeoutMs) return resolve(false);
-      flush();
-      setTimeout(poll, 600);
+      setTimeout(poll, 500);
     })();
   });
 }
 window.addEventListener("online", () => flush());
-setInterval(() => flush(), 30000);
+setInterval(() => requestFlush(), 30000);
 
 /* ============================================================
    Downloads (backup and researcher use)
@@ -1120,7 +1192,7 @@ const ACTIONS = {
     setRating(uid, v);
     b.parentNode.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(+x.dataset.v === v)));
     b.closest("li").classList.remove("missing");
-    enqueueItem(uid); save(); flush();
+    enqueueItem(uid); save(); requestFlush();
   },
   gjt_submit: async () => {
     const missing = GJT_ACTIVE.filter(it => getResp(S, it.uid).value == null);
@@ -1191,8 +1263,10 @@ async function runFinish(){
   if (!S.completed){ S.times.finish = nowIso(); S.completed = true; }
   enqueueSession(); save();
   if (!CONFIG.dataEndpoint){ finishState = "local"; render(); return; }
-  backoff = 1000; clearTimeout(retryTimer);
-  const ok = await waitForEmptyOutbox(30000);
+  finishing = true; backoff = 1500;
+  flush();
+  const ok = await waitForEmptyOutbox(90000);
+  finishing = false;
   finishState = ok ? "saved" : "failed";
   render();
   if (ok && CONFIG.completionUrl) setTimeout(() => { location.href = CONFIG.completionUrl; }, 5000);
