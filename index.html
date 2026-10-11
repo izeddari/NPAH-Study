@@ -603,7 +603,7 @@ function baseRow(st){
     age: d.age || "", gender: d.gender || "", education: d.education || "", semester: d.semester || "",
     first_languages: d.first_languages || "", other_languages: d.other_languages || "",
     years_english: d.years_english || "", proficiency_self: d.proficiency || "",
-    institution: d.institution || "", class_group: d.class_group || "",
+    institution: d.institution || "",
     study_abroad: d.study_abroad || "", abroad_months: d.abroad_months || "",
     country: d.country || ""
   };
@@ -1092,7 +1092,6 @@ const SCREENS = {
         '<div class="field"><label for="proficiency">How good is your English? (self-rating)</label><select id="proficiency" name="proficiency" required><option value="">Select…</option>' +
           [["1","1 · Beginner"],["2","2"],["3","3"],["4","4 · Intermediate"],["5","5"],["6","6"],["7","7 · Native-like"]].map(o => '<option value="' + o[0] + '"' + (String(d.proficiency) === o[0] ? " selected" : "") + '>' + o[1] + '</option>').join("") + '</select></div>' +
         '<div class="field"><label for="institution">University or school (optional)</label><input id="institution" name="institution" value="' + esc(d.institution || "") + '"></div>' +
-        '<div class="field"><label for="class_group">Class or group (optional)</label><input id="class_group" name="class_group" value="' + esc(d.class_group || "") + '"></div>' +
         sel("study_abroad", "Have you lived or studied in an English-speaking country?", ["No","Yes"], d.study_abroad, true) +
         '<div class="field ' + (d.study_abroad === "Yes" ? "" : "hidden") + '" id="abroad_wrap"><label for="abroad_months">For how many months in total?</label><input id="abroad_months" name="abroad_months" type="number" inputmode="numeric" min="0" max="600" value="' + esc(d.abroad_months || "") + '"></div>' +
         '<div class="field full"><label for="apogee_code">APOGEE code <span class="opt-tag">(optional)</span></label><input id="apogee_code" name="apogee_code" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="20" value="' + esc(d.apogee_code || "") + '">' +
@@ -1427,7 +1426,7 @@ const ACTIONS = {
       S.demo.country = val("country") === "Other" ? val("country_other") : val("country");
     } else {
       Object.assign(S.demo, {years_english: val("years_english"), proficiency: val("proficiency"),
-        institution: val("institution"), class_group: val("class_group"),
+        institution: val("institution"),
         study_abroad: val("study_abroad"), abroad_months: val("study_abroad") === "Yes" ? val("abroad_months") : "",
         apogee_code: val("apogee_code"), email: val("email")});
     }
