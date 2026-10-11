@@ -151,19 +151,46 @@ dialog h2{margin-top:0}
 .opts button[aria-pressed="true"] .k{color:var(--accent)}
 .field .opt-tag{font-weight:400;color:var(--muted)}
 /* Compact placement-test screen: passage, question, options and buttons fit on one laptop screen */
-main.pt-main{max-width:980px;padding:12px 16px 20px}
-.pt-main .pt-instr{margin:0 0 6px}
-.pt-main .card{padding:14px 20px 16px}
-.pt-main .pt-title{font-size:16px;margin:0 0 4px}
-.pt-main .pt-passage{font-size:clamp(16px,1.5vw,18px);line-height:1.5}
+main.pt-main{max-width:1040px;padding:14px 20px 20px}
+.pt-main .pt-instr{margin:0 0 8px}
+.pt-main .card{padding:16px 24px 18px}
+.pt-main .pt-title{font-size:16px;margin:0 0 6px}
+.pt-main .pt-passage{font-size:17px;line-height:1.55}
 .pt-main .pt-passage p{margin:0 0 6px}
-.pt-main .pt-q{margin:10px 0 6px}
+.pt-main .pt-passage p:last-child{margin-bottom:0}
+.pt-main .pt-stem{font-size:clamp(20px,2.2vw,24px);line-height:1.5;padding:6px 0}
 .pt-main .notice{padding:14px 16px}
-.pt-main .opts{grid-template-columns:1fr 1fr;gap:6px;margin-top:4px}
-.pt-main .opts button{font-size:17px;padding:7px 12px;min-height:40px}
+/* Air between the material and the question: spacing plus a thin divider */
+.pt-ask{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.pt-main .pt-q{margin:0 0 8px}
+.pt-main .opts{grid-template-columns:1fr;gap:6px;margin-top:0}
+.pt-main .opts.four{grid-template-columns:1fr 1fr}
+.pt-main .opts button{font-size:17px;padding:7px 14px;min-height:40px}
 .pt-main .error{margin:4px 0 0;min-height:1.2em}
-.pt-main .actions{margin-top:8px}
-@media (max-width:700px){.pt-main .opts{grid-template-columns:1fr}}
+.pt-main .actions{margin-top:6px}
+/* Taller screens: use the free space for larger text and more breathing room */
+@media (min-height:720px){
+  main.pt-main{padding-top:24px}
+  .pt-main .card{padding:22px 32px 24px}
+  .pt-main .pt-title{font-size:17px;margin-bottom:10px}
+  .pt-main .pt-passage{font-size:18px;line-height:1.65}
+  .pt-main .pt-passage p{margin-bottom:10px}
+  .pt-ask{margin-top:20px;padding-top:18px}
+  .pt-main .pt-q{margin-bottom:12px}
+  .pt-main .opts{gap:8px}
+  .pt-main .opts button{font-size:18px;min-height:46px;padding:9px 16px}
+  .pt-main .actions{margin-top:12px}
+}
+@media (min-height:860px){
+  main.pt-main{padding-top:40px}
+  .pt-main .card{padding:28px 40px 30px}
+  .pt-main .pt-passage{font-size:19px;line-height:1.75}
+  .pt-ask{margin-top:26px;padding-top:22px}
+  .pt-main .opts{gap:10px}
+  .pt-main .opts button{min-height:52px}
+  .pt-main .actions{margin-top:20px}
+}
+@media (max-width:700px){.pt-main .opts.four{grid-template-columns:1fr}}
 
 /* Admin */
 table.t{border-collapse:collapse;width:100%;font-size:14px}
@@ -1149,21 +1176,26 @@ const SCREENS = {
     enterItem(it.uid);
     const v = getResp(S, it.uid).value;
     const last = i === PT.length - 1;
-    let body;
+    // Layout: material (passage / notice / sentence) on top, then a divider, then the question and its options.
+    let material, ask;
     if (sec.text){
       const paras = sec.text.split("\n").map(p => '<p>' + esc(p).replace(/\[(\d+)\]/g, (m, n) =>
         '<span class="gap' + (+n === it.id ? ' cur' : '') + '">(' + n + ') ________</span>') + '</p>').join("");
-      body = (sec.title ? '<p class="pt-title">' + esc(sec.title) + '</p>' : '') +
-        '<div class="pt-passage" oncopy="return false">' + paras + '</div>' +
-        '<p class="pt-q">Question ' + it.id + ': which word fits gap (' + it.id + ')?</p>';
+      material = (sec.title ? '<p class="pt-title">' + esc(sec.title) + '</p>' : '') +
+        '<div class="pt-passage" oncopy="return false">' + paras + '</div>';
+      ask = 'Question ' + it.id + ': which word fits gap (' + it.id + ')?';
     } else if (sec.id === "notices"){
-      body = '<div class="notice" oncopy="return false">' + esc(it.stem) + '</div><p class="pt-q">Question ' + it.id + ': where can you see this notice?</p>';
+      material = '<div class="notice" oncopy="return false">' + esc(it.stem) + '</div>';
+      ask = 'Question ' + it.id + ': where can you see this notice?';
     } else {
-      body = '<p class="pt-q" style="margin-top:0">Question ' + it.id + '</p><div class="pt-stem" oncopy="return false">' + esc(it.stem) + '</div>';
+      material = '<div class="pt-stem" oncopy="return false">' + esc(it.stem) + '</div>';
+      ask = 'Question ' + it.id + ': choose the best answer.';
     }
-    page('<p class="pt-instr">' + esc(sec.instr) + '</p><div class="card">' + body +
-      '<div class="opts" role="group" aria-label="Answer options">' + it.options.map((o, k) =>
-        '<button aria-pressed="' + (v === LETTERS[k]) + '" data-act="pt_choose" data-v="' + LETTERS[k] + '"><span class="k">' + LETTERS[k] + '</span><span>' + esc(o) + '</span></button>').join("") + '</div></div>' +
+    const four = it.options.length === 4;   // two columns only for four options
+    page('<p class="pt-instr">' + esc(sec.instr) + '</p><div class="card pt-card">' + material +
+      '<div class="pt-ask"><p class="pt-q">' + ask + '</p>' +
+      '<div class="opts' + (four ? ' four' : '') + '" role="group" aria-label="Answer options">' + it.options.map((o, k) =>
+        '<button aria-pressed="' + (v === LETTERS[k]) + '" data-act="pt_choose" data-v="' + LETTERS[k] + '"><span class="k">' + LETTERS[k] + '</span><span>' + esc(o) + '</span></button>').join("") + '</div></div></div>' +
       '<p class="error" id="pt_err" role="alert"></p>' +
       '<div class="actions"><button class="btn ghost" data-act="pt_prev"' + (i === 0 ? ' disabled' : '') + '>Previous</button><button class="btn" data-act="pt_next" id="pt_next">' + (last ? 'Finish Part ' + partNo("PT") : 'Next') + '</button></div>', true);
     const m = app.querySelector("main"); if (m) m.className = "pt-main";
