@@ -1074,7 +1074,8 @@ const SCREENS = {
       '<div class="help">4 to 20 letters or numbers, no spaces, for example BlueTiger27. Do not use your real name. Write it down: you will need it to ask for your data to be deleted.</div></div>' +
       '<div class="field"><label for="age">Age</label><input id="age" name="age" type="number" inputmode="numeric" min="' + CONFIG.minAge + '" max="99" value="' + esc(d.age || "") + '" required></div>' +
       '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender" required><option value="">Select…</option>' +
-        ["Female","Male","Prefer to self-describe","Prefer not to say"].map(o => opt(o, d.gender_choice)).join("") + '</select></div>' +
+        // EFL group: three options only (cultural fit, data minimisation). Native speakers keep the self-describe option.
+        (g === "native" ? ["Female","Male","Prefer to self-describe","Prefer not to say"] : ["Female","Male","Prefer not to say"]).map(o => opt(o, d.gender_choice)).join("") + '</select></div>' +
       '<div class="field full ' + (d.gender_choice === "Prefer to self-describe" ? "" : "hidden") + '" id="gender_self_wrap"><label for="gender_self">Please describe</label><input id="gender_self" name="gender_self" value="' + esc(d.gender_self || "") + '"></div>' +
       (g === "native"
         ? sel("education", "Highest education level (completed or current)", ["Secondary school","Bachelor's student","Bachelor's degree","Master's student","Master's degree","Doctoral student","Doctorate (PhD)","Other"], d.education, true)
