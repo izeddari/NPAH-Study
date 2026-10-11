@@ -439,6 +439,8 @@ const PT_RAW = [
 const PT_KEY_STRING = "BBABCBACBABACDAABCDADADDCCACBCAACDDDDBCCCDCAABABDCCADBDDACDB";   // answer key, items 1-60
 const PT_BANDS = [[0,"A1"],[18,"A2"],[30,"B1"],[40,"B2"],[48,"C1"],[55,"C2"]];
 const LETTERS = ["A","B","C","D"];
+// EFL About-you page: semesters offered for each programme.
+const SEMESTERS = {"Bachelor student":["S1","S2","S3","S4","S5","S6"], "Master student":["S1","S2","S3","S4"]};
 
 /* ============================================================
    Derived structures
@@ -598,7 +600,7 @@ function baseRow(st){
     device_type: st.device.device_type, pointer: st.device.pointer,
     screen_w: st.device.screen_w, screen_h: st.device.screen_h,
     keyboard_events_seen: !!st.keyboard_events_seen,
-    age: d.age || "", gender: d.gender || "", education: d.education || "",
+    age: d.age || "", gender: d.gender || "", education: d.education || "", semester: d.semester || "",
     first_languages: d.first_languages || "", other_languages: d.other_languages || "",
     years_english: d.years_english || "", proficiency_self: d.proficiency || "",
     institution: d.institution || "", class_group: d.class_group || "",
@@ -1074,7 +1076,12 @@ const SCREENS = {
       '<div class="field"><label for="gender">Gender</label><select id="gender" name="gender" required><option value="">Select…</option>' +
         ["Female","Male","Prefer to self-describe","Prefer not to say"].map(o => opt(o, d.gender_choice)).join("") + '</select></div>' +
       '<div class="field full ' + (d.gender_choice === "Prefer to self-describe" ? "" : "hidden") + '" id="gender_self_wrap"><label for="gender_self">Please describe</label><input id="gender_self" name="gender_self" value="' + esc(d.gender_self || "") + '"></div>' +
-      sel("education", "Highest education level (completed or current)", ["Secondary school","Bachelor's student","Bachelor's degree","Master's student","Master's degree","Doctoral student","Doctorate (PhD)","Other"], d.education, true) +
+      (g === "native"
+        ? sel("education", "Highest education level (completed or current)", ["Secondary school","Bachelor's student","Bachelor's degree","Master's student","Master's degree","Doctoral student","Doctorate (PhD)","Other"], d.education, true)
+        // EFL: current programme first, then the semester list that belongs to it.
+        : sel("education", "Are you a Bachelor student or a Master student?", ["Bachelor student","Master student"], d.education, true) +
+          '<div class="field ' + (SEMESTERS[d.education] ? "" : "hidden") + '" id="semester_wrap"><label for="semester">Which semester are you in?</label><select id="semester" name="semester"><option value="">Select…</option>' +
+            (SEMESTERS[d.education] || []).map(o => opt(o, d.semester)).join("") + '</select></div>') +
       '<div class="field"><label for="first_languages">First language(s)</label><input id="first_languages" name="first_languages" placeholder="e.g., Moroccan Arabic, Amazigh" value="' + esc(d.first_languages || "") + '" required></div>' +
       '<div class="field full"><label for="other_languages">Other languages you speak (optional)</label><input id="other_languages" name="other_languages" placeholder="e.g., French, Spanish" value="' + esc(d.other_languages || "") + '"></div>';
     if (g === "native"){
@@ -1099,6 +1106,13 @@ const SCREENS = {
     toggle("gender", "gender_self_wrap", "Prefer to self-describe");
     toggle("country", "country_other_wrap", "Other");
     toggle("study_abroad", "abroad_wrap", "Yes");
+    // EFL: rebuild the semester list when the programme changes (Bachelor S1-S6, Master S1-S4).
+    const edu = document.getElementById("education"), semSel = document.getElementById("semester");
+    if (edu && semSel) edu.addEventListener("change", () => {
+      const list = SEMESTERS[edu.value] || [], keep = list.indexOf(semSel.value) >= 0 ? semSel.value : "";
+      semSel.innerHTML = '<option value="">Select…</option>' + list.map(o => opt(o, keep)).join("");
+      document.getElementById("semester_wrap").classList.toggle("hidden", !list.length);
+    });
   },
 
   pt_intro(){
@@ -1377,6 +1391,7 @@ const ACTIONS = {
     if (!val("gender")) mark("gender");
     if (val("gender") === "Prefer to self-describe" && !val("gender_self")) mark("gender_self");
     if (!val("education")) mark("education");
+    if (S.group !== "native" && SEMESTERS[val("education")] && SEMESTERS[val("education")].indexOf(val("semester")) < 0) mark("semester");
     if (!val("first_languages")) mark("first_languages");
     if (S.group === "native"){
       if (!val("country")) mark("country");
@@ -1405,7 +1420,7 @@ const ACTIONS = {
     S.demo = {
       age: age, gender_choice: gc, gender_self: val("gender_self"),
       gender: gc === "Prefer to self-describe" ? "Self-described: " + val("gender_self") : gc,
-      education: val("education"), first_languages: val("first_languages"), other_languages: val("other_languages")
+      education: val("education"), semester: S.group !== "native" && SEMESTERS[val("education")] ? val("semester") : "", first_languages: val("first_languages"), other_languages: val("other_languages")
     };
     if (S.group === "native"){
       S.demo.country_choice = val("country"); S.demo.country_other = val("country_other");
@@ -1676,7 +1691,7 @@ function renderAdmin(){
 function simulate(){
   const st = newState(CONFIG.groups[0], null, false);
   st.is_test = true; st.participant_id = "SIMTEST" + Math.floor(Math.random() * 900 + 100);
-  st.demo = {age: 21, gender: "Prefer not to say", education: "Bachelor's student", first_languages: "Moroccan Arabic", other_languages: "French", years_english: "8", proficiency: "4", study_abroad: "No", apogee_code: "12345678", email: "sim.participant@example.com"};
+  st.demo = {age: 21, gender: "Prefer not to say", education: "Bachelor student", semester: "S5", first_languages: "Moroccan Arabic", other_languages: "French", years_english: "8", proficiency: "4", study_abroad: "No", apogee_code: "12345678", email: "sim.participant@example.com"};
   const t0 = Date.now() - 1800000;
   if (ptOn(st.group)){
     st.times.pt_start = new Date(t0).toISOString();
