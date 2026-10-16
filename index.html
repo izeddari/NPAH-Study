@@ -263,9 +263,10 @@ const CONFIG = {
   // English placement test (60 multiple-choice items, UCLES 2001), shown as Part 1 to these groups only.
   includePlacementTest: true,
   placementGroups: ["EFL"],
-  // Part 2 (items 41-60) only for people scoring 36+ of 40 on items 1-40, as in the QPT paper-test procedure
-  // (the CEFR bands assume this). 0 = everyone does all 60 items.
-  ptPart2MinScore: 36,
+  // Cut-off for Part 2 (items 41-60). 0 = everyone does all 60 items (current setting): every participant is
+  // scored on the same 0-60 scale, so the CEFR bands (B2 starts at 40/60) are not capped for weaker Part 1 scorers.
+  // A value N > 0 would stop people scoring below N on items 1-40 after item 40 (their total is then out of 40).
+  ptPart2MinScore: 0,
   // Researcher mode: open index.html?admin=1. This is a convenience lock, not real security.
   adminPassword: "admin",
   researcher: {
@@ -813,7 +814,7 @@ function ptScores(st){
     const r = st.resp[it.uid];
     if (!r || r.value == null) return;
     answered++;
-    if (r.value === it.key){ if (it.sec.part === 1) p1++; else p2++; }
+    if (r.value === it.key){ if (it.sec.part === 1) p1++; else if (!st.pt_part2_skipped) p2++; }
   });
   const done = !!(st.submitted && st.submitted.PT);
   return {included:true, answered:answered, part1:p1, part2:p2, skipped: !!st.pt_part2_skipped,
@@ -1036,7 +1037,11 @@ function header(){
     const parts = partsFor(S.group), n = parts.indexOf(part) + 1;
     const name = {PT:"English placement test", SCT:"Sentence combining", GJT:"Sentence judgment", FRAME:"Short sentence check"}[part];
     left = '<span class="brand">Part ' + n + ' of ' + parts.length + ' <span class="part">· ' + name + '</span></span>';
-    if (S.screen === "pt_item"){ right = "Question " + (S.idx + 1); }   // total not shown (some participants stop after item 40)
+    if (S.screen === "pt_item"){
+      // Total shown only when everyone takes all items (no cut-off after item 40).
+      if (CONFIG.ptPart2MinScore > 0) right = "Question " + (S.idx + 1);
+      else { right = "Question " + (S.idx + 1) + " of " + PT.length; pct = (S.idx + 1) / PT.length; }
+    }
     if (S.screen === "sct_item"){ right = "Item " + (S.idx + 1) + " of " + SCT_ACTIVE.length; pct = (S.idx + 1) / SCT_ACTIVE.length; }
     if (S.screen === "gjt_item"){ const k = realIndex(S.idx); right = "Item " + k + " of " + GJT_ACTIVE.length; pct = k / GJT_ACTIVE.length; }
     if (S.screen === "frame_item"){ right = "Item " + (S.idx + 1) + " of " + FRAME_SEQ.length; pct = (S.idx + 1) / FRAME_SEQ.length; }
@@ -1690,6 +1695,7 @@ function selfCheck(){
   add("Placement test keys match the published answer key", PT.map(p => p.key).join("") === PT_KEY_STRING);
   add("Every placement item has a section, 3–4 options and a valid key", PT.every(p => p.sec && p.options.length >= 3 && p.options.length <= 4 && LETTERS.indexOf(p.key) >= 0 && LETTERS.indexOf(p.key) < p.options.length));
   add("Every passage gap appears exactly once in its passage", PT.filter(p => p.sec.text).every(p => p.sec.text.split("[" + p.id + "]").length === 2));
+  add("Placement test: all 60 items given to everyone (no cut-off after item 40)", CONFIG.ptPart2MinScore === 0, "ptPart2MinScore = " + CONFIG.ptPart2MinScore);
   add("Placement CEFR bands", ptCefr(17) === "A1" && ptCefr(18) === "A2" && ptCefr(30) === "B1" && ptCefr(40) === "B2" && ptCefr(48) === "C1" && ptCefr(55) === "C2" && ptCefr(60) === "C2");
   add("SCT has 26 items", SCT.length === 26, SCT.length);
   add("GJT has 52 items", GJT.length === 52, GJT.length);
